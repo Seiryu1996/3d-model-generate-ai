@@ -1,0 +1,44 @@
+version: '3.8'
+
+# Development overrides for hot reload and development features
+services:
+  api:
+    environment:
+      - DEBUG=true
+      - RELOAD=true
+    volumes:
+      - ./src:/app/src  # Remove :ro for development hot reload
+      - ./configs:/app/configs
+    command: ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  worker:
+    volumes:
+      - ./src:/app/src  # Remove :ro for development hot reload
+    # Override command for development if needed
+    # command: ["python", "-m", "src.services.worker", "--debug"]
+
+# Additional development services
+  # Adminer for database management (if using PostgreSQL later)
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - trellis-network
+    profiles:
+      - dev-tools
+
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - trellis-network
+    profiles:
+      - dev-tools

@@ -1,0 +1,27 @@
+torch==2.4.0
+torchvision==0.19.0
+pillow==10.1.0
+imageio==2.33.1
+imageio-ffmpeg==0.4.9
+tqdm==4.66.1
+easydict==1.11
+opencv-python-headless==4.8.1.78
+scipy==1.11.4
+ninja==1.11.1
+rembg==2.0.57
+onnxruntime==1.16.3
+trimesh==4.0.5
+open3d==0.18.0
+xatlas==0.0.8
+pyvista==0.43.1
+pymeshfix==0.16.2
+igraph==0.11.3
+transformers==4.36.2
+google-cloud-storage==2.12.0
+google-cloud-firestore==2.13.1
+google-cloud-tasks==2.14.2
+google-cloud-logging==3.8.0
+structlog==23.2.0
+tenacity==8.2.3
+huggingface_hub==0.19.4
+utils3d @ git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8
