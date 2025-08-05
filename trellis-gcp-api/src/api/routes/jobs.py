@@ -11,15 +11,12 @@ from ...models.api import (
 )
 from ...models.base import JobStatus
 from ...services.job_service import get_job_service, JobServiceError, JobNotFoundError, JobAccessDeniedError
+from ...utils.auth import get_current_user_id
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
 
 
-async def get_current_user_id() -> str:
-    """Get current user ID from authentication."""
-    # TODO: Implement proper authentication
-    return "anonymous"
 
 
 @router.get(

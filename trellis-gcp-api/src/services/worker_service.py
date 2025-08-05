@@ -13,7 +13,7 @@ import structlog
 
 from ..models.base import JobStatus, JobType
 from ..models.job import Job
-from ..services.trellis_service import get_trellis_service, TrellisServiceError
+# TrellisService will be imported lazily to avoid torch dependency in API
 from ..services.job_service import get_job_service
 from ..services.queue_service import get_queue_service
 from ..repositories.job_repository import get_job_repository
@@ -33,11 +33,19 @@ class WorkerService:
     
     def __init__(self):
         self.settings = get_settings()
-        self.trellis_service = get_trellis_service()
+        self._trellis_service = None  # Lazy load
         self.job_service = get_job_service()
         self.queue_service = get_queue_service()
         self.job_repository = get_job_repository()
         self._processing_jobs = set()
+    
+    @property
+    def trellis_service(self):
+        """Get TRELLIS service with lazy loading."""
+        if self._trellis_service is None:
+            from .trellis_service import get_trellis_service
+            self._trellis_service = get_trellis_service()
+        return self._trellis_service
     
     async def process_job_from_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -165,13 +173,15 @@ class WorkerService:
                 'processing_time_seconds': (datetime.utcnow() - job.created_at).total_seconds()
             }
             
-        except TrellisServiceError as e:
-            logger.error(
-                "TRELLIS processing failed for image-to-3D job",
-                job_id=job.job_id,
-                error=str(e)
-            )
-            raise WorkerServiceError(f"Image-to-3D processing failed: {e}")
+        except Exception as trellis_error:
+            # Check if it's a TRELLIS service error
+            if 'TrellisServiceError' in str(type(trellis_error)):
+                logger.error(
+                    "TRELLIS processing failed for image-to-3D job",
+                    job_id=job.job_id,
+                    error=str(trellis_error)
+                )
+                raise WorkerServiceError(f"Image-to-3D processing failed: {trellis_error}")
         except Exception as e:
             logger.error(
                 "Unexpected error during image-to-3D processing",
@@ -205,13 +215,15 @@ class WorkerService:
                 'processing_time_seconds': (datetime.utcnow() - job.created_at).total_seconds()
             }
             
-        except TrellisServiceError as e:
-            logger.error(
-                "TRELLIS processing failed for text-to-3D job",
-                job_id=job.job_id,
-                error=str(e)
-            )
-            raise WorkerServiceError(f"Text-to-3D processing failed: {e}")
+        except Exception as trellis_error:
+            # Check if it's a TRELLIS service error
+            if 'TrellisServiceError' in str(type(trellis_error)):
+                logger.error(
+                    "TRELLIS processing failed for text-to-3D job",
+                    job_id=job.job_id,
+                    error=str(trellis_error)
+                )
+                raise WorkerServiceError(f"Text-to-3D processing failed: {trellis_error}")
         except Exception as e:
             logger.error(
                 "Unexpected error during text-to-3D processing",

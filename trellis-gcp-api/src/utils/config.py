@@ -28,13 +28,13 @@ class Settings(BaseSettings):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = Field(None, env="GOOGLE_APPLICATION_CREDENTIALS")
     
     # Cloud Storage
-    GCS_BUCKET_MODELS: str = Field(..., env="GCS_BUCKET_MODELS")
-    GCS_BUCKET_INPUT: str = Field(..., env="GCS_BUCKET_INPUT")
-    GCS_BUCKET_OUTPUT: str = Field(..., env="GCS_BUCKET_OUTPUT")
-    GCS_BUCKET_TEMP: str = Field(..., env="GCS_BUCKET_TEMP")
+    GCS_BUCKET_MODELS: str = Field(default="trellis-models-dev", env="GCS_BUCKET_MODELS")
+    GCS_BUCKET_INPUT: str = Field(default="trellis-input-dev", env="GCS_BUCKET_INPUT")
+    GCS_BUCKET_OUTPUT: str = Field(default="trellis-output-dev", env="GCS_BUCKET_OUTPUT")
+    GCS_BUCKET_TEMP: str = Field(default="trellis-temp-dev", env="GCS_BUCKET_TEMP")
     
     # Cloud Tasks
-    CLOUD_TASKS_QUEUE: str = Field(..., env="CLOUD_TASKS_QUEUE")
+    CLOUD_TASKS_QUEUE: str = Field(default="trellis-tasks-dev", env="CLOUD_TASKS_QUEUE")
     CLOUD_TASKS_LOCATION: str = Field(default="us-central1", env="CLOUD_TASKS_LOCATION")
     
     # Firestore

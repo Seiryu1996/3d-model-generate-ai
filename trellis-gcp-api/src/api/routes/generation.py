@@ -9,15 +9,12 @@ from ...models.api import ImageTo3DRequest, TextTo3DRequest, JobResponse
 from ...models.job import Job, JobType, ImageTo3DInput, TextTo3DInput
 from ...services.job_service import get_job_service, JobServiceError
 from ...utils.config import get_settings
+from ...utils.auth import get_current_user_id, rate_limit_check
 
 router = APIRouter()
 logger = structlog.get_logger(__name__)
 
 
-async def get_current_user_id() -> str:
-    """Get current user ID from authentication."""
-    # TODO: Implement proper authentication
-    return "anonymous"
 
 
 @router.post(
@@ -29,7 +26,8 @@ async def get_current_user_id() -> str:
 )
 async def generate_3d_from_image(
     request: ImageTo3DRequest,
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user_id),
+    _: None = Depends(rate_limit_check)
 ) -> JobResponse:
     """Generate 3D model from image."""
     job_service = get_job_service()
@@ -96,7 +94,8 @@ async def generate_3d_from_image(
 )
 async def generate_3d_from_text(
     request: TextTo3DRequest,
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user_id),
+    _: None = Depends(rate_limit_check)
 ) -> JobResponse:
     """Generate 3D model from text prompt."""
     job_service = get_job_service()

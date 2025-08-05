@@ -302,6 +302,50 @@ class JobRepository(JobRepositoryInterface):
             )
             return 0
 
+    async def count_jobs(self) -> int:
+        """Count total number of jobs."""
+        try:
+            return await self.collection.count_documents()
+        except Exception as e:
+            logger.error("Failed to count jobs", error=str(e))
+            return 0
+    
+    async def count_jobs_by_status(self, status: JobStatus) -> int:
+        """Count jobs by status."""
+        try:
+            return await self.collection.count_documents({'status': status.value})
+        except Exception as e:
+            logger.error("Failed to count jobs by status", status=status.value, error=str(e))
+            return 0
+    
+    async def get_average_processing_time(self) -> Optional[float]:
+        """Get average processing time for completed jobs."""
+        try:
+            # Get completed jobs with processing time
+            completed_jobs = await self.collection.list_documents(
+                filters={'status': JobStatus.COMPLETED.value}
+            )
+            
+            if not completed_jobs:
+                return None
+            
+            total_time = 0.0
+            job_count = 0
+            
+            for job_data in completed_jobs:
+                if job_data.get('started_at') and job_data.get('completed_at'):
+                    started = datetime.fromisoformat(job_data['started_at'].replace('Z', '+00:00'))
+                    completed = datetime.fromisoformat(job_data['completed_at'].replace('Z', '+00:00'))
+                    processing_time = (completed - started).total_seconds()
+                    total_time += processing_time
+                    job_count += 1
+            
+            return total_time / job_count if job_count > 0 else None
+            
+        except Exception as e:
+            logger.error("Failed to calculate average processing time", error=str(e))
+            return None
+
 
 @lru_cache()
 def get_job_repository() -> JobRepository:

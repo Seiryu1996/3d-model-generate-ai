@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 
 from ..utils.config import get_settings
 from ..utils.logging import setup_logging
-from .routes import health, generation, jobs, worker
+from .routes import health, generation, jobs, worker, auth
 
 
 @asynccontextmanager
@@ -42,18 +42,40 @@ def create_app() -> FastAPI:
     )
     
     # Add middleware
+    # Configure CORS more securely
+    allowed_origins = ["*"] if settings.DEBUG else [
+        "https://your-frontend-domain.com",  # Configure for production
+    ]
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Configure based on your needs
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],
+        expose_headers=["X-RateLimit-Limit", "X-RateLimit-Reset"]
     )
     
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["*"]  # Configure based on your needs
+        allowed_hosts=["*"] if settings.DEBUG else ["your-api-domain.com"]
     )
+    
+    # Add security headers middleware
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        
+        # Add security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        
+        if not settings.DEBUG:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        
+        return response
     
     # Add request logging middleware
     @app.middleware("http")
@@ -76,6 +98,7 @@ def create_app() -> FastAPI:
     
     # Include routers
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
+    app.include_router(auth.router, prefix="/api/v1", tags=["authentication"])
     app.include_router(generation.router, prefix="/api/v1", tags=["generation"])
     app.include_router(jobs.router, prefix="/api/v1", tags=["jobs"])
     app.include_router(worker.router, prefix="/api/v1", tags=["worker"])

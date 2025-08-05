@@ -21,6 +21,7 @@ from ..models.base import JobType, QualityLevel, OutputFormat
 from ..models.job import Job, JobOutputFile
 from ..utils.config import get_settings
 from ..utils.storage_adapter import get_storage_manager
+from .model_converter import get_model_converter
 
 
 logger = structlog.get_logger(__name__)
@@ -47,6 +48,7 @@ class TrellisService:
     def __init__(self):
         self.settings = get_settings()
         self.storage_manager = get_storage_manager()
+        self.model_converter = get_model_converter()
         self._image_to_3d_pipeline = None
         self._text_to_3d_pipeline = None
         self._device = None
@@ -271,15 +273,21 @@ class TrellisService:
             if progress_callback:
                 await progress_callback(0.7, "Converting to output formats...")
             
-            # Convert to requested formats
+            # Convert to requested formats using ModelConverter
             output_formats = [OutputFormat(fmt) for fmt in input_data.get('output_formats', ['glb'])]
-            output_files = await self._convert_to_formats(job, result, output_formats)
+            
+            converted_files = await self.model_converter.convert_model(
+                input_data=result,
+                target_formats=output_formats,
+                job_id=job.job_id,
+                quality_settings=quality_settings
+            )
             
             if progress_callback:
                 await progress_callback(0.9, "Uploading results...")
             
             # Upload output files
-            uploaded_files = await self._upload_output_files(job, output_files)
+            uploaded_files = await self._upload_converted_files(job, converted_files)
             
             if progress_callback:
                 await progress_callback(1.0, "Processing complete")
@@ -357,15 +365,21 @@ class TrellisService:
             if progress_callback:
                 await progress_callback(0.7, "Converting to output formats...")
             
-            # Convert to requested formats
+            # Convert to requested formats using ModelConverter
             output_formats = [OutputFormat(fmt) for fmt in input_data.get('output_formats', ['glb'])]
-            output_files = await self._convert_to_formats(job, result, output_formats)
+            
+            converted_files = await self.model_converter.convert_model(
+                input_data=result,
+                target_formats=output_formats,
+                job_id=job.job_id,
+                quality_settings=quality_settings
+            )
             
             if progress_callback:
                 await progress_callback(0.9, "Uploading results...")
             
             # Upload output files
-            uploaded_files = await self._upload_output_files(job, output_files)
+            uploaded_files = await self._upload_converted_files(job, converted_files)
             
             if progress_callback:
                 await progress_callback(1.0, "Processing complete")
@@ -450,154 +464,22 @@ class TrellisService:
             logger.error("Failed to load input image", error=str(e))
             raise ProcessingError(f"Failed to load input image: {e}")
     
-    async def _convert_to_formats(
+    async def _upload_converted_files(
         self,
         job: Job,
-        trellis_result: Any,
-        output_formats: List[OutputFormat]
-    ) -> List[Tuple[str, Path]]:
-        """Convert TRELLIS result to requested output formats."""
-        try:
-            output_files = []
-            
-            # Create temporary directory for output files
-            temp_dir = Path(tempfile.mkdtemp())
-            
-            try:
-                for output_format in output_formats:
-                    filename = f"{job.job_id}_{output_format.value}"
-                    
-                    if output_format == OutputFormat.GLB:
-                        # Export as GLB
-                        output_path = temp_dir / f"{filename}.glb"
-                        await self._export_as_glb(trellis_result, output_path)
-                        output_files.append((output_format.value, output_path))
-                        
-                    elif output_format == OutputFormat.OBJ:
-                        # Export as OBJ
-                        output_path = temp_dir / f"{filename}.obj"
-                        await self._export_as_obj(trellis_result, output_path)
-                        output_files.append((output_format.value, output_path))
-                        
-                    elif output_format == OutputFormat.PLY:
-                        # Export as PLY
-                        output_path = temp_dir / f"{filename}.ply"
-                        await self._export_as_ply(trellis_result, output_path)
-                        output_files.append((output_format.value, output_path))
-                        
-                    else:
-                        logger.warning(f"Unsupported output format: {output_format}")
-                
-                logger.info(
-                    "Format conversion completed",
-                    job_id=job.job_id,
-                    formats=[fmt.value for fmt in output_formats],
-                    output_files_count=len(output_files)
-                )
-                
-                return output_files
-                
-            except Exception as e:
-                # Cleanup temp directory on error
-                shutil.rmtree(temp_dir, ignore_errors=True)
-                raise e
-            
-        except Exception as e:
-            logger.error(
-                "Format conversion failed",
-                job_id=job.job_id,
-                error=str(e)
-            )
-            raise ProcessingError(f"Format conversion failed: {e}")
-    
-    async def _export_as_glb(self, trellis_result: Any, output_path: Path) -> None:
-        """Export TRELLIS result as GLB format."""
-        try:
-            # This would depend on the actual TRELLIS result structure
-            # For now, this is a placeholder implementation
-            if hasattr(trellis_result, 'export_glb'):
-                trellis_result.export_glb(str(output_path))
-            elif hasattr(trellis_result, 'to_mesh'):
-                mesh = trellis_result.to_mesh()
-                if hasattr(mesh, 'export'):
-                    mesh.export(str(output_path))
-                else:
-                    # Fallback: save as placeholder
-                    output_path.write_text("GLB export not implemented")
-            else:
-                # Placeholder implementation
-                output_path.write_text("GLB export not implemented")
-                
-            logger.info(f"GLB export completed: {output_path}")
-            
-        except Exception as e:
-            logger.error(f"GLB export failed: {e}")
-            raise ProcessingError(f"GLB export failed: {e}")
-    
-    async def _export_as_obj(self, trellis_result: Any, output_path: Path) -> None:
-        """Export TRELLIS result as OBJ format."""
-        try:
-            # This would depend on the actual TRELLIS result structure
-            # For now, this is a placeholder implementation
-            if hasattr(trellis_result, 'export_obj'):
-                trellis_result.export_obj(str(output_path))
-            elif hasattr(trellis_result, 'to_mesh'):
-                mesh = trellis_result.to_mesh()
-                if hasattr(mesh, 'export'):
-                    mesh.export(str(output_path))
-                else:
-                    # Fallback: save as placeholder
-                    output_path.write_text("OBJ export not implemented")
-            else:
-                # Placeholder implementation
-                output_path.write_text("OBJ export not implemented")
-                
-            logger.info(f"OBJ export completed: {output_path}")
-            
-        except Exception as e:
-            logger.error(f"OBJ export failed: {e}")
-            raise ProcessingError(f"OBJ export failed: {e}")
-    
-    async def _export_as_ply(self, trellis_result: Any, output_path: Path) -> None:
-        """Export TRELLIS result as PLY format."""
-        try:
-            # This would depend on the actual TRELLIS result structure
-            # For now, this is a placeholder implementation
-            if hasattr(trellis_result, 'export_ply'):
-                trellis_result.export_ply(str(output_path))
-            elif hasattr(trellis_result, 'to_pointcloud'):
-                pointcloud = trellis_result.to_pointcloud()
-                if hasattr(pointcloud, 'export'):
-                    pointcloud.export(str(output_path))
-                else:
-                    # Fallback: save as placeholder
-                    output_path.write_text("PLY export not implemented")
-            else:
-                # Placeholder implementation
-                output_path.write_text("PLY export not implemented")
-                
-            logger.info(f"PLY export completed: {output_path}")
-            
-        except Exception as e:
-            logger.error(f"PLY export failed: {e}")
-            raise ProcessingError(f"PLY export failed: {e}")
-    
-    async def _upload_output_files(
-        self,
-        job: Job,
-        output_files: List[Tuple[str, Path]]
+        converted_files: List[Tuple[OutputFormat, Path]]
     ) -> List[JobOutputFile]:
-        """Upload output files to storage and return file metadata."""
+        """Upload converted files to storage and return file metadata."""
         try:
             uploaded_files = []
             bucket_names = self.storage_manager.get_bucket_names()
             output_bucket = bucket_names['output']
             
-            for format_name, file_path in output_files:
+            for output_format, file_path in converted_files:
                 try:
                     # Generate storage key
                     file_extension = file_path.suffix
-                    storage_key = f"{job.user_id}/{job.job_id}/{format_name}{file_extension}"
+                    storage_key = f"{job.user_id}/{job.job_id}/{output_format.value}{file_extension}"
                     
                     # Upload file
                     file_url = await self.storage_manager.storage.upload_file(
@@ -611,52 +493,44 @@ class TrellisService:
                     
                     # Create output file metadata
                     output_file = JobOutputFile(
-                        format=format_name,
+                        format=output_format.value,
                         url=file_url,
                         size_bytes=file_size,
-                        filename=f"{job.job_id}_{format_name}{file_extension}"
+                        filename=f"{job.job_id}_{output_format.value}{file_extension}"
                     )
                     
                     uploaded_files.append(output_file)
                     
                     logger.info(
-                        "Output file uploaded",
+                        "Converted file uploaded",
                         job_id=job.job_id,
-                        format=format_name,
+                        format=output_format.value,
                         url=file_url,
                         size_bytes=file_size
                     )
                     
                 except Exception as e:
                     logger.error(
-                        "Failed to upload output file",
+                        "Failed to upload converted file",
                         job_id=job.job_id,
-                        format=format_name,
+                        format=output_format.value,
                         file_path=str(file_path),
                         error=str(e)
                     )
                     # Continue with other files
                     continue
-                finally:
-                    # Clean up local file
-                    try:
-                        file_path.unlink()
-                    except Exception:
-                        pass
             
-            # Clean up temp directory
+            # Clean up temporary files
             try:
-                if output_files:
-                    temp_dir = output_files[0][1].parent
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-            except Exception:
-                pass
+                self.model_converter.cleanup_temp_files(job.job_id)
+            except Exception as e:
+                logger.warning("Failed to cleanup temp files", job_id=job.job_id, error=str(e))
             
             if not uploaded_files:
                 raise ProcessingError("No output files were successfully uploaded")
             
             logger.info(
-                "All output files uploaded",
+                "All converted files uploaded",
                 job_id=job.job_id,
                 uploaded_count=len(uploaded_files)
             )
@@ -665,11 +539,12 @@ class TrellisService:
             
         except Exception as e:
             logger.error(
-                "Failed to upload output files",
+                "Failed to upload converted files",
                 job_id=job.job_id,
                 error=str(e)
             )
-            raise ProcessingError(f"Failed to upload output files: {e}")
+            raise ProcessingError(f"Failed to upload converted files: {e}")
+    
     
     def get_model_info(self) -> Dict[str, Any]:
         """Get information about loaded models."""
