@@ -22,6 +22,10 @@ RUN pip install --no-cache-dir -r requirements-worker-mock.txt
 COPY simple_worker.py ./simple_worker.py
 COPY integrated_worker.py ./integrated_worker.py
 COPY simple_job_processor.py ./simple_job_processor.py
+COPY memory_worker.py ./memory_worker.py
+
+# Copy src directory for proper module structure
+COPY src /app/src
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

@@ -31,7 +31,115 @@ class JobRepository:
     def __init__(self):
         self.settings = get_settings()
         self._jobs_cache: Dict[str, Job] = {}  # In-memory cache for development
+        self._redis_client = None  # Redis client for shared storage in development
     
+    async def _get_redis_client(self):
+        """Get Redis client for shared storage in development."""
+        if self._redis_client is None:
+            import redis
+            self._redis_client = redis.Redis(
+                host=self.settings.REDIS_HOST,
+                port=self.settings.REDIS_PORT,
+                decode_responses=True
+            )
+        return self._redis_client
+    
+    async def _store_job_in_redis(self, job: Job):
+        """Store job in Redis for shared access."""
+        try:
+            redis_client = await self._get_redis_client()
+            job_data = self._job_to_dict(job)
+            redis_client.hset(f"job:{job.job_id}", mapping=job_data)
+            logger.debug("Job stored in Redis", job_id=job.job_id)
+        except Exception as e:
+            logger.error("Failed to store job in Redis", job_id=job.job_id, error=str(e))
+    
+    async def _get_job_from_redis(self, job_id: str) -> Optional[Job]:
+        """Get job from Redis."""
+        try:
+            redis_client = await self._get_redis_client()
+            job_data = redis_client.hgetall(f"job:{job_id}")
+            if job_data:
+                return self._dict_to_job(job_data)
+            return None
+        except Exception as e:
+            logger.error("Failed to get job from Redis", job_id=job_id, error=str(e))
+            return None
+    
+    async def _get_all_jobs_from_redis(self) -> List[Job]:
+        """Get all jobs from Redis."""
+        try:
+            redis_client = await self._get_redis_client()
+            job_keys = redis_client.keys("job:*")
+            jobs = []
+            for key in job_keys:
+                job_data = redis_client.hgetall(key)
+                if job_data:
+                    jobs.append(self._dict_to_job(job_data))
+            return jobs
+        except Exception as e:
+            logger.error("Failed to get jobs from Redis", error=str(e))
+            return []
+    
+    def _job_to_dict(self, job: Job) -> Dict[str, Any]:
+        """Convert Job model to dictionary for storage."""
+        import json
+        data = job.dict()
+        
+        # Convert datetime objects to ISO strings for storage
+        for field in ['created_at', 'updated_at', 'expires_at', 'started_at', 'completed_at']:
+            if data.get(field):
+                data[field] = data[field].isoformat()
+        
+        # Convert complex objects to JSON strings for Redis storage
+        for field in ['input_data', 'output_files']:
+            if data.get(field):
+                data[field] = json.dumps(data[field])
+        
+        # Ensure all values are Redis-compatible (string, int, float)
+        for key, value in data.items():
+            if value is None:
+                data[key] = ""
+            elif isinstance(value, (list, dict)):
+                data[key] = json.dumps(value)
+            elif not isinstance(value, (str, int, float)):
+                data[key] = str(value)
+        
+        return data
+    
+    def _dict_to_job(self, data: Dict[str, Any]) -> Job:
+        """Convert dictionary from storage to Job model."""
+        import json
+        
+        # Convert ISO strings back to datetime objects
+        for field in ['created_at', 'updated_at', 'expires_at', 'started_at', 'completed_at']:
+            if data.get(field) and isinstance(data[field], str) and data[field]:
+                try:
+                    data[field] = datetime.fromisoformat(data[field])
+                except ValueError:
+                    logger.warning(f"Failed to parse datetime field {field}", value=data[field])
+                    data[field] = None
+            elif data.get(field) == "":
+                data[field] = None
+        
+        # Convert JSON strings back to objects
+        for field in ['input_data', 'output_files']:
+            if data.get(field) and isinstance(data[field], str) and data[field]:
+                try:
+                    data[field] = json.loads(data[field])
+                except (json.JSONDecodeError, ValueError):
+                    logger.warning(f"Failed to parse JSON field {field}", value=data[field])
+                    data[field] = None
+            elif data.get(field) == "":
+                data[field] = None
+        
+        # Handle empty string values
+        for key, value in data.items():
+            if value == "":
+                data[key] = None
+        
+        return Job(**data)
+
     async def create(self, job: Job) -> Job:
         """Create a new job."""
         try:
@@ -44,11 +152,11 @@ class JobRepository:
             job.updated_at = datetime.utcnow()
             
             if self.settings.is_development():
-                # Use in-memory storage for development
-                self._jobs_cache[job.job_id] = job
+                # Use Redis storage for development (shared between API and worker)
+                await self._store_job_in_redis(job)
                 
                 logger.info(
-                    "Job created in memory",
+                    "Job created in Redis",
                     job_id=job.job_id,
                     job_type=job.job_type,
                     user_id=job.user_id
@@ -78,13 +186,13 @@ class JobRepository:
         """Get a job by ID."""
         try:
             if self.settings.is_development():
-                # Get from in-memory storage
-                job = self._jobs_cache.get(job_id)
+                # Get from Redis storage
+                job = await self._get_job_from_redis(job_id)
                 
                 if job:
-                    logger.debug("Job retrieved from memory", job_id=job_id)
+                    logger.debug("Job retrieved from Redis", job_id=job_id)
                 else:
-                    logger.debug("Job not found in memory", job_id=job_id)
+                    logger.debug("Job not found in Redis", job_id=job_id)
                 
                 return job
             else:
@@ -112,12 +220,13 @@ class JobRepository:
             job.updated_at = datetime.utcnow()
             
             if self.settings.is_development():
-                # Update in-memory storage
-                if job.job_id in self._jobs_cache:
-                    self._jobs_cache[job.job_id] = job
+                # Update in Redis storage
+                existing_job = await self._get_job_from_redis(job.job_id)
+                if existing_job:
+                    await self._store_job_in_redis(job)
                     
                     logger.info(
-                        "Job updated in memory",
+                        "Job updated in Redis",
                         job_id=job.job_id,
                         status=job.status
                     )
@@ -556,6 +665,39 @@ class JobRepository:
         except Exception as e:
             logger.error("Failed to update output files", job_id=job_id, error=str(e))
             return False
+    
+    async def get_pending_jobs(self, limit: int = 10) -> List[Job]:
+        """Get jobs that are pending processing."""
+        try:
+            if self.settings.is_development():
+                # Get from Redis storage
+                all_jobs = await self._get_all_jobs_from_redis()
+                pending_jobs = [
+                    job for job in all_jobs
+                    if job.status == JobStatus.PENDING
+                ]
+                
+                # Sort by created_at ASC (oldest first)
+                pending_jobs.sort(key=lambda x: x.created_at)
+                
+                # Limit results
+                limited_jobs = pending_jobs[:limit]
+                
+                logger.info(
+                    "Pending jobs retrieved from Redis",
+                    total_pending=len(pending_jobs),
+                    returned=len(limited_jobs)
+                )
+                
+                return limited_jobs
+            else:
+                # Get from Firestore (placeholder - not implemented)
+                logger.warning("get_pending_jobs() not implemented for Firestore")
+                return []
+                
+        except Exception as e:
+            logger.error("Failed to get pending jobs", error=str(e))
+            return []
 
 
 @lru_cache()

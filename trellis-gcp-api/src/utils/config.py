@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     
     # Development/Local Configuration
     REDIS_URL: Optional[str] = Field(None, env="REDIS_URL")
+    REDIS_HOST: str = Field(default="redis", env="REDIS_HOST")
+    REDIS_PORT: int = Field(default=6379, env="REDIS_PORT")
     MINIO_ENDPOINT: Optional[str] = Field(None, env="MINIO_ENDPOINT")
     MINIO_ACCESS_KEY: Optional[str] = Field(None, env="MINIO_ACCESS_KEY")
     MINIO_SECRET_KEY: Optional[str] = Field(None, env="MINIO_SECRET_KEY")

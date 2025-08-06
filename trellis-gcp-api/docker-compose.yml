@@ -104,6 +104,8 @@ services:
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DEBUG=true
     volumes:
       - ./src:/app/src
     depends_on:
@@ -116,7 +118,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: python simple_job_processor.py
+    command: python -m src.workers.memory_worker
 
   # Redis Commander for Redis management (dev tools)
   redis-commander:
