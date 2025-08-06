@@ -1,0 +1,14 @@
+[server]
+port = 8501
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
+
+[runner]
+magicEnabled = false
+
+[logger]
+level = "error"

@@ -298,7 +298,7 @@ def main():
     if hasattr(st.session_state, 'current_job_id'):
         if st.sidebar.checkbox("🔄 自動更新（5秒間隔）"):
             time.sleep(5)
-            st.experimental_rerun()
+            st.rerun()
 
 
 if __name__ == "__main__":

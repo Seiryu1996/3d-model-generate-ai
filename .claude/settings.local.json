@@ -37,7 +37,10 @@
       "Bash(docker rm:*)",
       "mcp__serena__replace_symbol_body",
       "Bash(awk:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(sed:*)",
+      "Bash(ss:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

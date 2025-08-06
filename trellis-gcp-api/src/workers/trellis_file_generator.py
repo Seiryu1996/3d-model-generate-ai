@@ -201,6 +201,595 @@ class TrellisFileGenerator:
             raise
     
     def _generate_procedural_shape(self, prompt: str):
+        """Generate a highly detailed procedural 3D shape with advanced prompt analysis."""
+        import math
+        import hashlib
+        import random
+        import re
+        
+        prompt_lower = prompt.lower()
+        
+        # Enhanced prompt preprocessing - extract key descriptors
+        # Remove common words to focus on meaningful terms
+        stopwords = {'a', 'an', 'the', 'is', 'are', 'with', 'of', 'and', 'or', 'in', 'on', 'at', 'to', 'for'}
+        words = [w for w in prompt_lower.split() if w not in stopwords and len(w) > 2]
+        
+        # Advanced semantic analysis
+        descriptors = {
+            'size_modifiers': ['tiny', 'small', 'large', 'huge', 'giant', 'massive', 'enormous', 'miniature'],
+            'shape_modifiers': ['round', 'square', 'angular', 'curved', 'twisted', 'spiral', 'geometric', 'organic'],
+            'texture_modifiers': ['smooth', 'rough', 'bumpy', 'spiky', 'serrated', 'ridged', 'faceted', 'crystalline'],
+            'emotional_modifiers': ['fierce', 'gentle', 'aggressive', 'peaceful', 'majestic', 'elegant', 'powerful', 'delicate'],
+            'animals': ['dragon', 'bird', 'fish', 'lion', 'tiger', 'eagle', 'snake', 'turtle', 'cat', 'dog', 'wolf', 'bear'],
+            'objects': ['car', 'house', 'tree', 'flower', 'sword', 'shield', 'crown', 'chair', 'table', 'bottle', 'vase'],
+            'fantasy': ['wizard', 'magic', 'crystal', 'wand', 'potion', 'spell', 'enchanted', 'mystical', 'ethereal'],
+            'architecture': ['castle', 'tower', 'fortress', 'cathedral', 'temple', 'palace', 'bridge', 'gate'],
+            'mechanical': ['robot', 'gear', 'engine', 'machine', 'clockwork', 'steampunk', 'android', 'mech']
+        }
+        
+        # Analyze prompt context
+        context = {}
+        for category, items in descriptors.items():
+            matches = [item for item in items if item in prompt_lower]
+            if matches:
+                context[category] = matches
+        
+        # Enhanced seed generation from semantic analysis
+        semantic_seed = 0
+        for category, matches in context.items():
+            category_weight = len(category) * 100
+            for match in matches:
+                semantic_seed += hash(match) % 10000
+            semantic_seed += category_weight
+        
+        # Multi-layer seeding for maximum uniqueness
+        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
+        word_signature = sum(ord(c) for word in words for c in word)
+        length_signature = len(prompt) * len(words) if words else 1
+        
+        final_seed = (int(prompt_hash[:12], 16) + semantic_seed + word_signature + length_signature) % (2**31)
+        random.seed(final_seed)
+        
+        # Advanced complexity calculation
+        base_complexity = len(words) * 2
+        detail_boost = sum(1 for cat, matches in context.items() if matches) * 3
+        complexity = min(base_complexity + detail_boost, 25)
+        
+        # Enhanced material analysis
+        material_properties = {
+            'density': 1.0,
+            'roughness': 0.5,
+            'transparency': 0.0,
+            'reflectivity': 0.3
+        }
+        
+        # Material detection with detailed properties
+        if any(mat in prompt_lower for mat in ['crystal', 'diamond', 'glass', 'ice', 'gem']):
+            material_properties.update({'density': 0.6, 'roughness': 0.1, 'transparency': 0.8})
+        elif any(mat in prompt_lower for mat in ['metal', 'steel', 'iron', 'gold', 'silver', 'bronze']):
+            material_properties.update({'density': 1.8, 'roughness': 0.2, 'reflectivity': 0.9})
+        elif any(mat in prompt_lower for mat in ['wood', 'oak', 'pine', 'bamboo', 'bark']):
+            material_properties.update({'density': 1.2, 'roughness': 0.8})
+        elif any(mat in prompt_lower for mat in ['stone', 'rock', 'marble', 'granite']):
+            material_properties.update({'density': 1.6, 'roughness': 0.7})
+        elif any(mat in prompt_lower for mat in ['fabric', 'silk', 'velvet', 'cotton']):
+            material_properties.update({'density': 0.4, 'roughness': 0.9})
+        
+        # Advanced color-to-structure mapping
+        color_influence = 1.0
+        structural_modifier = 1.0
+        
+        color_mappings = {
+            ('red', 'crimson', 'scarlet', 'ruby'): {'influence': 1.4, 'structure': 1.3, 'aggression': True},
+            ('blue', 'azure', 'sapphire', 'navy'): {'influence': 0.9, 'structure': 0.8, 'smooth': True},
+            ('green', 'emerald', 'jade', 'forest'): {'influence': 1.1, 'structure': 1.0, 'organic': True},
+            ('purple', 'violet', 'amethyst', 'indigo'): {'influence': 1.3, 'structure': 1.4, 'mystical': True},
+            ('gold', 'yellow', 'amber', 'topaz'): {'influence': 1.2, 'structure': 1.1, 'precious': True},
+            ('black', 'obsidian', 'onyx', 'shadow'): {'influence': 1.1, 'structure': 1.5, 'sharp': True},
+            ('white', 'pearl', 'ivory', 'snow'): {'influence': 0.8, 'structure': 0.9, 'pure': True}
+        }
+        
+        for colors, properties in color_mappings.items():
+            if any(color in prompt_lower for color in colors):
+                color_influence = properties['influence']
+                structural_modifier = properties['structure']
+                break
+        
+        # Determine primary generation strategy based on semantic analysis
+        if context.get('animals'):
+            return self._generate_advanced_creature(context, complexity, material_properties, color_influence)
+        elif context.get('mechanical'):
+            return self._generate_advanced_mechanical(context, complexity, material_properties, structural_modifier)
+        elif context.get('architecture'):
+            return self._generate_advanced_architecture(context, complexity, material_properties, color_influence)
+        elif context.get('objects'):
+            return self._generate_advanced_object(context, complexity, material_properties, color_influence)
+        elif context.get('fantasy'):
+            return self._generate_advanced_fantasy(context, complexity, material_properties, color_influence)
+        else:
+            # Fallback to abstract shape with maximum detail
+            return self._generate_advanced_abstract(prompt_lower, complexity, material_properties, color_influence)
+
+    def _generate_advanced_creature(self, context, complexity, material_properties, color_influence):
+        """Generate highly detailed creatures based on semantic analysis."""
+        import math
+        import random
+        
+        vertices = []
+        faces = []
+        
+        # Determine creature type from context
+        animals = context.get('animals', ['creature'])
+        primary_animal = animals[0]
+        
+        # Advanced creature generation based on animal type
+        if 'dragon' in primary_animal:
+            return self._generate_detailed_dragon(complexity, material_properties, color_influence, context)
+        elif 'bird' in primary_animal or 'eagle' in primary_animal:
+            return self._generate_detailed_bird(complexity, material_properties, color_influence, context)
+        elif 'fish' in primary_animal:
+            return self._generate_detailed_fish(complexity, material_properties, color_influence, context)
+        elif any(pred in primary_animal for pred in ['lion', 'tiger', 'wolf', 'bear']):
+            return self._generate_detailed_predator(primary_animal, complexity, material_properties, color_influence, context)
+        else:
+            return self._generate_detailed_generic_creature(primary_animal, complexity, material_properties, color_influence, context)
+
+    def _generate_advanced_mechanical(self, context, complexity, material_properties, structural_modifier):
+        """Generate highly detailed mechanical objects."""
+        import math
+        import random
+        
+        mechanical = context.get('mechanical', ['robot'])
+        primary_type = mechanical[0]
+        
+        if 'robot' in primary_type or 'android' in primary_type:
+            return self._generate_detailed_robot(complexity, material_properties, structural_modifier, context)
+        elif 'gear' in primary_type or 'clockwork' in primary_type:
+            return self._generate_detailed_gears(complexity, material_properties, structural_modifier, context)
+        elif 'engine' in primary_type or 'machine' in primary_type:
+            return self._generate_detailed_engine(complexity, material_properties, structural_modifier, context)
+        else:
+            return self._generate_detailed_generic_mechanical(primary_type, complexity, material_properties, structural_modifier, context)
+
+    def _generate_advanced_architecture(self, context, complexity, material_properties, color_influence):
+        """Generate highly detailed architectural structures."""
+        architecture = context.get('architecture', ['building'])
+        primary_type = architecture[0]
+        
+        if 'castle' in primary_type:
+            return self._generate_detailed_castle(complexity, material_properties, color_influence, context)
+        elif 'tower' in primary_type:
+            return self._generate_detailed_tower(complexity, material_properties, color_influence, context)
+        elif 'cathedral' in primary_type or 'temple' in primary_type:
+            return self._generate_detailed_religious_building(primary_type, complexity, material_properties, color_influence, context)
+        else:
+            return self._generate_detailed_generic_architecture(primary_type, complexity, material_properties, color_influence, context)
+
+    def _generate_advanced_object(self, context, complexity, material_properties, color_influence):
+        """Generate highly detailed everyday objects."""
+        objects = context.get('objects', ['object'])
+        primary_object = objects[0]
+        
+        if 'car' in primary_object:
+            return self._generate_detailed_vehicle(complexity, material_properties, color_influence, context)
+        elif 'chair' in primary_object:
+            return self._generate_detailed_furniture(primary_object, complexity, material_properties, color_influence, context)
+        elif any(item in primary_object for item in ['sword', 'shield', 'crown']):
+            return self._generate_detailed_weapon_item(primary_object, complexity, material_properties, color_influence, context)
+        else:
+            return self._generate_detailed_generic_object(primary_object, complexity, material_properties, color_influence, context)
+
+    def _generate_advanced_fantasy(self, context, complexity, material_properties, color_influence):
+        """Generate highly detailed fantasy objects."""
+        fantasy = context.get('fantasy', ['magic'])
+        primary_type = fantasy[0]
+        
+        if 'crystal' in primary_type:
+            return self._generate_detailed_magical_crystal(complexity, material_properties, color_influence, context)
+        elif 'wand' in primary_type:
+            return self._generate_detailed_magical_wand(complexity, material_properties, color_influence, context)
+        elif 'potion' in primary_type:
+            return self._generate_detailed_potion_bottle(complexity, material_properties, color_influence, context)
+        else:
+            return self._generate_detailed_generic_fantasy(primary_type, complexity, material_properties, color_influence, context)
+
+    def _generate_advanced_abstract(self, prompt_lower, complexity, material_properties, color_influence):
+        """Generate highly detailed abstract shapes based on prompt analysis."""
+        import math
+        import random
+        import hashlib
+        
+        # Advanced abstract generation
+        prompt_hash = int(hashlib.md5(prompt_lower.encode()).hexdigest()[:8], 16)
+        random.seed(prompt_hash)
+        
+        vertices = []
+        faces = []
+        
+        # Multi-layer abstract structure
+        layers = complexity + 5
+        base_radius = 2.0 * color_influence
+        height_scale = 3.0 * material_properties['density']
+        
+        # Generate complex abstract geometry
+        for layer in range(layers):
+            layer_t = layer / layers
+            layer_radius = base_radius * (1.0 + 0.5 * math.sin(layer_t * math.pi))
+            layer_height = layer_t * height_scale - height_scale/2
+            
+            # Variable segments based on layer
+            segments = max(6, int(12 + complexity * math.sin(layer_t * math.pi * 2)))
+            
+            for segment in range(segments):
+                segment_t = segment / segments
+                angle = segment_t * 2 * math.pi
+                
+                # Complex radius modulation
+                radius_mod = 1.0
+                radius_mod *= (1.0 + 0.3 * math.sin(angle * 3 + layer_t * math.pi))
+                radius_mod *= material_properties['roughness'] + 0.5
+                
+                final_radius = layer_radius * radius_mod
+                
+                x = final_radius * math.cos(angle)
+                y = final_radius * math.sin(angle)
+                z = layer_height
+                
+                vertices.append((x, y, z))
+        
+        # Generate sophisticated face connections
+        for layer in range(layers - 1):
+            current_layer_segments = max(6, int(12 + complexity * math.sin((layer / layers) * math.pi * 2)))
+            next_layer_segments = max(6, int(12 + complexity * math.sin(((layer + 1) / layers) * math.pi * 2)))
+            
+            # Connect layers with triangular faces
+            for i in range(min(current_layer_segments, next_layer_segments)):
+                current_base = sum(max(6, int(12 + complexity * math.sin((l / layers) * math.pi * 2))) for l in range(layer))
+                next_base = sum(max(6, int(12 + complexity * math.sin((l / layers) * math.pi * 2))) for l in range(layer + 1))
+                
+                v1 = current_base + i
+                v2 = current_base + (i + 1) % current_layer_segments
+                v3 = next_base + (i % next_layer_segments)
+                v4 = next_base + ((i + 1) % next_layer_segments)
+                
+                # Create triangular faces
+                if v3 < len(vertices) and v4 < len(vertices):
+                    faces.extend([(v1, v2, v3), (v2, v4, v3)])
+        
+        return vertices, faces
+
+    def _generate_detailed_dragon(self, complexity, material_properties, color_influence, context):
+        """Generate an extremely simple, clearly recognizable dragon shape."""
+        vertices = []
+        faces = []
+        
+        scale = 1.0  # Keep it simple
+        
+        # BODY: Simple elongated box (main dragon body)
+        body_length = 6.0 * scale
+        body_width = 2.0 * scale
+        body_height = 1.5 * scale
+        
+        # Dragon body as a simple rectangular box
+        vertices.extend([
+            # Bottom face of body
+            (-body_length/2, -body_width/2, 0),           # 0
+            (body_length/2, -body_width/2, 0),            # 1
+            (body_length/2, body_width/2, 0),             # 2
+            (-body_length/2, body_width/2, 0),            # 3
+            # Top face of body
+            (-body_length/2, -body_width/2, body_height), # 4
+            (body_length/2, -body_width/2, body_height),  # 5
+            (body_length/2, body_width/2, body_height),   # 6
+            (-body_length/2, body_width/2, body_height),  # 7
+        ])
+        
+        # HEAD: Simple larger box at front
+        head_size = 1.8 * scale
+        head_x = -body_length/2 - head_size/2  # In front of body
+        
+        vertices.extend([
+            # Bottom face of head
+            (head_x - head_size/2, -head_size/2, 0),           # 8
+            (head_x + head_size/2, -head_size/2, 0),           # 9
+            (head_x + head_size/2, head_size/2, 0),            # 10
+            (head_x - head_size/2, head_size/2, 0),            # 11
+            # Top face of head
+            (head_x - head_size/2, -head_size/2, head_size),   # 12
+            (head_x + head_size/2, -head_size/2, head_size),   # 13
+            (head_x + head_size/2, head_size/2, head_size),    # 14
+            (head_x - head_size/2, head_size/2, head_size),    # 15
+        ])
+        
+        # TAIL: Simple smaller box at back
+        tail_width = 0.8 * scale
+        tail_length = 3.0 * scale
+        tail_x = body_length/2 + tail_length/2  # Behind body
+        
+        vertices.extend([
+            # Bottom face of tail
+            (tail_x - tail_length/2, -tail_width/2, 0),           # 16
+            (tail_x + tail_length/2, -tail_width/2, 0),           # 17
+            (tail_x + tail_length/2, tail_width/2, 0),            # 18
+            (tail_x - tail_length/2, tail_width/2, 0),            # 19
+            # Top face of tail
+            (tail_x - tail_length/2, -tail_width/2, tail_width),  # 20
+            (tail_x + tail_length/2, -tail_width/2, tail_width),  # 21
+            (tail_x + tail_length/2, tail_width/2, tail_width),   # 22
+            (tail_x - tail_length/2, tail_width/2, tail_width),   # 23
+        ])
+        
+        # WINGS: Two simple triangular wings
+        wing_span = 4.0 * scale
+        wing_height = 2.0 * scale
+        
+        # Left wing triangle
+        vertices.extend([
+            (0, 0, body_height),                    # 24 - Wing root (center of body)
+            (-2, -wing_span, body_height + wing_height), # 25 - Wing tip left
+            (2, -wing_span, body_height),           # 26 - Wing trailing edge left
+        ])
+        
+        # Right wing triangle
+        vertices.extend([
+            (0, 0, body_height),                    # 27 - Wing root (center of body) 
+            (-2, wing_span, body_height + wing_height),  # 28 - Wing tip right
+            (2, wing_span, body_height),            # 29 - Wing trailing edge right
+        ])
+        
+        # LEGS: Four simple stick legs
+        leg_length = 2.0 * scale
+        leg_positions = [
+            (-1.5, -0.8, 0),  # Front left leg base
+            (-1.5, 0.8, 0),   # Front right leg base  
+            (1.5, -0.8, 0),   # Back left leg base
+            (1.5, 0.8, 0),    # Back right leg base
+        ]
+        
+        for i, (lx, ly, lz) in enumerate(leg_positions):
+            leg_base = 30 + i * 2
+            vertices.extend([
+                (lx, ly, lz),                    # Leg top (on body)
+                (lx, ly, lz - leg_length),       # Leg bottom (foot)
+            ])
+        
+        # FACES: Simple box faces for each part
+        # Body faces (vertices 0-7)
+        faces.extend([
+            # Bottom
+            (0, 1, 2), (0, 2, 3),
+            # Top  
+            (4, 7, 6), (4, 6, 5),
+            # Front
+            (0, 4, 5), (0, 5, 1),
+            # Back
+            (2, 6, 7), (2, 7, 3),
+            # Left
+            (3, 7, 4), (3, 4, 0),
+            # Right
+            (1, 5, 6), (1, 6, 2),
+        ])
+        
+        # Head faces (vertices 8-15)
+        faces.extend([
+            # Bottom
+            (8, 9, 10), (8, 10, 11),
+            # Top
+            (12, 15, 14), (12, 14, 13),
+            # Front
+            (8, 12, 13), (8, 13, 9),
+            # Back
+            (10, 14, 15), (10, 15, 11),
+            # Left
+            (11, 15, 12), (11, 12, 8),
+            # Right
+            (9, 13, 14), (9, 14, 10),
+        ])
+        
+        # Tail faces (vertices 16-23)
+        faces.extend([
+            # Bottom
+            (16, 17, 18), (16, 18, 19),
+            # Top
+            (20, 23, 22), (20, 22, 21),
+            # Front
+            (16, 20, 21), (16, 21, 17),
+            # Back
+            (18, 22, 23), (18, 23, 19),
+            # Left
+            (19, 23, 20), (19, 20, 16),
+            # Right
+            (17, 21, 22), (17, 22, 18),
+        ])
+        
+        # Wing faces (simple triangles)
+        faces.extend([
+            (24, 25, 26),  # Left wing
+            (27, 28, 29),  # Right wing
+        ])
+        
+        # Leg faces (simple lines as triangles)
+        for i in range(4):
+            leg_base = 30 + i * 2
+            # Create a tiny triangle for each leg
+            faces.append((leg_base, leg_base + 1, leg_base))
+        
+        return vertices, faces
+
+    def _generate_detailed_robot(self, complexity, material_properties, structural_modifier, context):
+        """Generate an extremely simple, clearly recognizable robot shape."""
+        vertices = []
+        faces = []
+        
+        scale = 1.0  # Keep it simple
+        
+        # TORSO: Simple rectangular main body
+        torso_width = 2.0 * scale
+        torso_height = 3.0 * scale
+        torso_depth = 1.5 * scale
+        
+        # Main robot body as simple box
+        vertices.extend([
+            # Bottom face of torso
+            (-torso_width/2, -torso_depth/2, 0),           # 0
+            (torso_width/2, -torso_depth/2, 0),            # 1
+            (torso_width/2, torso_depth/2, 0),             # 2
+            (-torso_width/2, torso_depth/2, 0),            # 3
+            # Top face of torso
+            (-torso_width/2, -torso_depth/2, torso_height), # 4
+            (torso_width/2, -torso_depth/2, torso_height),  # 5
+            (torso_width/2, torso_depth/2, torso_height),   # 6
+            (-torso_width/2, torso_depth/2, torso_height),  # 7
+        ])
+        
+        # HEAD: Simple cubic head on top
+        head_size = 1.2 * scale
+        head_z = torso_height
+        
+        vertices.extend([
+            # Bottom face of head
+            (-head_size/2, -head_size/2, head_z),           # 8
+            (head_size/2, -head_size/2, head_z),            # 9
+            (head_size/2, head_size/2, head_z),             # 10
+            (-head_size/2, head_size/2, head_z),            # 11
+            # Top face of head
+            (-head_size/2, -head_size/2, head_z + head_size), # 12
+            (head_size/2, -head_size/2, head_z + head_size),  # 13
+            (head_size/2, head_size/2, head_z + head_size),   # 14
+            (-head_size/2, head_size/2, head_z + head_size),  # 15
+        ])
+        
+        # LEFT ARM: Simple box arm
+        arm_width = 0.4 * scale
+        arm_length = 2.0 * scale
+        arm_height = 0.4 * scale
+        arm_z = torso_height * 0.8
+        
+        left_arm_x = -torso_width/2 - arm_length/2
+        vertices.extend([
+            # Bottom face of left arm
+            (left_arm_x - arm_length/2, -arm_width/2, arm_z),           # 16
+            (left_arm_x + arm_length/2, -arm_width/2, arm_z),           # 17
+            (left_arm_x + arm_length/2, arm_width/2, arm_z),            # 18
+            (left_arm_x - arm_length/2, arm_width/2, arm_z),            # 19
+            # Top face of left arm
+            (left_arm_x - arm_length/2, -arm_width/2, arm_z + arm_height), # 20
+            (left_arm_x + arm_length/2, -arm_width/2, arm_z + arm_height), # 21
+            (left_arm_x + arm_length/2, arm_width/2, arm_z + arm_height),  # 22
+            (left_arm_x - arm_length/2, arm_width/2, arm_z + arm_height),  # 23
+        ])
+        
+        # RIGHT ARM: Simple box arm (mirror of left)
+        right_arm_x = torso_width/2 + arm_length/2
+        vertices.extend([
+            # Bottom face of right arm
+            (right_arm_x - arm_length/2, -arm_width/2, arm_z),           # 24
+            (right_arm_x + arm_length/2, -arm_width/2, arm_z),           # 25
+            (right_arm_x + arm_length/2, arm_width/2, arm_z),            # 26
+            (right_arm_x - arm_length/2, arm_width/2, arm_z),            # 27
+            # Top face of right arm
+            (right_arm_x - arm_length/2, -arm_width/2, arm_z + arm_height), # 28
+            (right_arm_x + arm_length/2, -arm_width/2, arm_z + arm_height), # 29
+            (right_arm_x + arm_length/2, arm_width/2, arm_z + arm_height),  # 30
+            (right_arm_x - arm_length/2, arm_width/2, arm_z + arm_height),  # 31
+        ])
+        
+        # LEFT LEG: Simple box leg
+        leg_width = 0.6 * scale
+        leg_height = 2.5 * scale
+        leg_depth = 0.6 * scale
+        
+        left_leg_x = -torso_width/4
+        vertices.extend([
+            # Bottom face of left leg
+            (left_leg_x - leg_width/2, -leg_depth/2, -leg_height),           # 32
+            (left_leg_x + leg_width/2, -leg_depth/2, -leg_height),           # 33
+            (left_leg_x + leg_width/2, leg_depth/2, -leg_height),            # 34
+            (left_leg_x - leg_width/2, leg_depth/2, -leg_height),            # 35
+            # Top face of left leg (connects to torso)
+            (left_leg_x - leg_width/2, -leg_depth/2, 0),                     # 36
+            (left_leg_x + leg_width/2, -leg_depth/2, 0),                     # 37
+            (left_leg_x + leg_width/2, leg_depth/2, 0),                      # 38
+            (left_leg_x - leg_width/2, leg_depth/2, 0),                      # 39
+        ])
+        
+        # RIGHT LEG: Simple box leg (mirror of left)
+        right_leg_x = torso_width/4
+        vertices.extend([
+            # Bottom face of right leg
+            (right_leg_x - leg_width/2, -leg_depth/2, -leg_height),           # 40
+            (right_leg_x + leg_width/2, -leg_depth/2, -leg_height),           # 41
+            (right_leg_x + leg_width/2, leg_depth/2, -leg_height),            # 42
+            (right_leg_x - leg_width/2, leg_depth/2, -leg_height),            # 43
+            # Top face of right leg (connects to torso)
+            (right_leg_x - leg_width/2, -leg_depth/2, 0),                     # 44
+            (right_leg_x + leg_width/2, -leg_depth/2, 0),                     # 45
+            (right_leg_x + leg_width/2, leg_depth/2, 0),                      # 46
+            (right_leg_x - leg_width/2, leg_depth/2, 0),                      # 47
+        ])
+        
+        # FACES: Box faces for each part
+        # Torso faces (vertices 0-7)
+        faces.extend([
+            (0, 1, 2), (0, 2, 3),        # Bottom
+            (4, 7, 6), (4, 6, 5),        # Top
+            (0, 4, 5), (0, 5, 1),        # Front
+            (2, 6, 7), (2, 7, 3),        # Back
+            (3, 7, 4), (3, 4, 0),        # Left
+            (1, 5, 6), (1, 6, 2),        # Right
+        ])
+        
+        # Head faces (vertices 8-15)
+        faces.extend([
+            (8, 9, 10), (8, 10, 11),      # Bottom
+            (12, 15, 14), (12, 14, 13),   # Top
+            (8, 12, 13), (8, 13, 9),      # Front
+            (10, 14, 15), (10, 15, 11),   # Back
+            (11, 15, 12), (11, 12, 8),    # Left
+            (9, 13, 14), (9, 14, 10),     # Right
+        ])
+        
+        # Left arm faces (vertices 16-23)
+        faces.extend([
+            (16, 17, 18), (16, 18, 19),    # Bottom
+            (20, 23, 22), (20, 22, 21),    # Top
+            (16, 20, 21), (16, 21, 17),    # Front
+            (18, 22, 23), (18, 23, 19),    # Back
+            (19, 23, 20), (19, 20, 16),    # Left
+            (17, 21, 22), (17, 22, 18),    # Right
+        ])
+        
+        # Right arm faces (vertices 24-31)
+        faces.extend([
+            (24, 25, 26), (24, 26, 27),    # Bottom
+            (28, 31, 30), (28, 30, 29),    # Top
+            (24, 28, 29), (24, 29, 25),    # Front
+            (26, 30, 31), (26, 31, 27),    # Back
+            (27, 31, 28), (27, 28, 24),    # Left
+            (25, 29, 30), (25, 30, 26),    # Right
+        ])
+        
+        # Left leg faces (vertices 32-39)
+        faces.extend([
+            (32, 33, 34), (32, 34, 35),    # Bottom
+            (36, 39, 38), (36, 38, 37),    # Top
+            (32, 36, 37), (32, 37, 33),    # Front
+            (34, 38, 39), (34, 39, 35),    # Back
+            (35, 39, 36), (35, 36, 32),    # Left
+            (33, 37, 38), (33, 38, 34),    # Right
+        ])
+        
+        # Right leg faces (vertices 40-47)
+        faces.extend([
+            (40, 41, 42), (40, 42, 43),    # Bottom
+            (44, 47, 46), (44, 46, 45),    # Top
+            (40, 44, 45), (40, 45, 41),    # Front
+            (42, 46, 47), (42, 47, 43),    # Back
+            (43, 47, 44), (43, 44, 40),    # Left
+            (41, 45, 46), (41, 46, 42),    # Right
+        ])
+        
+        return vertices, faces
 
     def _generate_magical_creature(self, prompt_lower, seed, complexity, color_scale):
         """Generate a magical creature like unicorn, pegasus."""
@@ -617,815 +1206,361 @@ class TrellisFileGenerator:
                 faces.extend([(v1, v2, v3), (v2, v4, v3)])
         
         return vertices, faces
-    """Generate a completely unique procedural 3D shape based on prompt content."""
-    import math
-    import hashlib
-    import random
-    
-    prompt_lower = prompt.lower()
-    
-    # Create multiple hash seeds from different prompt characteristics
-    prompt_hash = hashlib.md5(prompt.encode()).hexdigest()
-    word_count_seed = len(prompt.split())
-    char_count_seed = len(prompt)
-    vowel_count_seed = sum(1 for c in prompt_lower if c in 'aeiou')
-    
-    # Combine multiple aspects for more variation
-    combined_seed = int(prompt_hash[:8], 16) + word_count_seed * 1000 + char_count_seed * 100 + vowel_count_seed * 10
-    random.seed(combined_seed)
-    
-    # Advanced prompt analysis for truly unique shapes
-    words = prompt_lower.split()
-    
-    # Determine base complexity from prompt richness
-    complexity = min(len(words) + len([w for w in words if len(w) > 6]), 15)
-    
-    # Color analysis affects structure
-    color_scale = 1.0
-    if any(color in prompt_lower for color in ['red', 'crimson', 'scarlet']):
-        color_scale = 1.3  # Red = larger, more aggressive
-    elif any(color in prompt_lower for color in ['blue', 'azure', 'cyan']):
-        color_scale = 0.9  # Blue = smaller, more delicate
-    elif any(color in prompt_lower for color in ['green', 'emerald', 'jade']):
-        color_scale = 1.1  # Green = natural scaling
-    elif any(color in prompt_lower for color in ['purple', 'violet', 'magenta']):
-        color_scale = 1.4  # Purple = exotic, larger scaling
-    
-    # Material analysis affects density
-    material_density = 1.0
-    if any(material in prompt_lower for material in ['crystal', 'glass', 'ice']):
-        material_density = 0.7  # Crystalline = more sparse, angular
-    elif any(material in prompt_lower for material in ['metal', 'steel', 'iron', 'bronze']):
-        material_density = 1.5  # Metal = denser, more vertices
-    elif any(material in prompt_lower for material in ['wood', 'bark', 'timber']):
-        material_density = 1.2  # Wood = organic density
-    elif any(material in prompt_lower for material in ['cloud', 'mist', 'fog']):
-        material_density = 0.5  # Ethereal = very sparse
-    
-    # Specific object detection with unique generation
-    if any(word in prompt_lower for word in ['unicorn', 'pegasus', 'alicorn']):
-        return self._generate_magical_creature(prompt_lower, combined_seed, complexity, color_scale)
-    elif any(word in prompt_lower for word in ['robot', 'mech', 'android', 'cyborg']):
-        return self._generate_mechanical_being(prompt_lower, combined_seed, complexity, material_density)
-    elif any(word in prompt_lower for word in ['castle', 'fortress', 'tower', 'citadel']):
-        return self._generate_architecture(prompt_lower, combined_seed, complexity, color_scale)
-    elif any(word in prompt_lower for word in ['spaceship', 'rocket', 'starship', 'craft']):
-        return self._generate_spacecraft(prompt_lower, combined_seed, complexity, material_density)
-    elif any(word in prompt_lower for word in ['crystal', 'gem', 'diamond', 'prism']):
-        return self._generate_crystalline_structure(prompt_lower, combined_seed, complexity, material_density)
-    elif any(word in prompt_lower for word in ['dragon', 'wyvern', 'drake']):
-        return self._generate_dragon_like_shape(prompt_lower, combined_seed, complexity, color_scale)
-    elif any(word in prompt_lower for word in ['tree', 'oak', 'pine', 'willow', 'maple']):
-        return self._generate_tree_shape(prompt_lower, combined_seed, complexity, color_scale)
-    elif any(word in prompt_lower for word in ['chair', 'throne', 'seat', 'bench']):
-        return self._generate_chair_shape(prompt_lower, combined_seed, complexity, color_scale)
-    elif any(word in prompt_lower for word in ['house', 'home', 'building', 'hut', 'cabin']):
-        return self._generate_house_shape(prompt_lower, combined_seed, complexity, color_scale)
-    else:
-        # For truly unique prompts, generate based on word analysis
-        return self._generate_word_based_unique_shape(prompt_lower, combined_seed, complexity, color_scale, material_density)
-    
-    def _generate_dragon_like_shape(self, prompt_lower, seed):
-        """Generate a dragon-like shape with variations based on prompt."""
-        import math
-        import random
-        random.seed(seed)
-        
-        vertices = []
-        faces = []
-        
-        # Analyze prompt for specific attributes
-        scale_x = 3.0
-        scale_y = 1.0
-        scale_z = 2.0
-        
-        # Modify based on descriptive words
-        if 'big' in prompt_lower or 'huge' in prompt_lower or 'large' in prompt_lower:
-            scale_x *= 1.5
-            scale_y *= 1.3
-            scale_z *= 1.4
-        elif 'small' in prompt_lower or 'tiny' in prompt_lower:
-            scale_x *= 0.7
-            scale_y *= 0.8
-            scale_z *= 0.8
-        
-        if 'fat' in prompt_lower or 'thick' in prompt_lower:
-            scale_y *= 1.6
-        elif 'thin' in prompt_lower or 'slim' in prompt_lower:
-            scale_y *= 0.6
-        
-        if 'long' in prompt_lower:
-            scale_x *= 1.8
-        
-        # Add random variation based on seed
-        scale_x *= (1.0 + random.uniform(-0.3, 0.3))
-        scale_y *= (1.0 + random.uniform(-0.3, 0.3))
-        scale_z *= (1.0 + random.uniform(-0.3, 0.3))
-        
-        # Body (elongated ellipsoid)
-        segments_u = 20 + random.randint(-5, 5)
-        segments_v = 10 + random.randint(-2, 2)
-        
-        for i in range(segments_u):
-            for j in range(segments_v):
-                u = (i / (segments_u - 1)) * 2 * math.pi
-                v = (j / (segments_v - 1)) * math.pi
-                
-                # Elongated body with variations
-                x = scale_x * math.cos(u) * math.sin(v)
-                y = scale_y * math.sin(u) * math.sin(v)
-                z = scale_z * math.cos(v)
-                
-                vertices.append((x, y, z))
-        
-        # Generate faces for the mesh
-        for i in range(segments_u - 1):
-            for j in range(segments_v - 1):
-                v1 = i * segments_v + j
-                v2 = i * segments_v + (j + 1)
-                v3 = (i + 1) * segments_v + j
-                v4 = (i + 1) * segments_v + (j + 1)
-                
-                faces.extend([(v1, v2, v3), (v2, v4, v3)])
-        
-        return vertices, faces
-    
-    def _generate_chair_shape(self, prompt_lower, seed):
-        """Generate a chair-like shape with variations."""
-        import random
-        random.seed(seed)
-        
-        # Base dimensions with variations
-        seat_width = 1.0 + random.uniform(-0.3, 0.3)
-        seat_depth = 1.0 + random.uniform(-0.2, 0.2)
-        seat_height = 1.0 + random.uniform(-0.2, 0.2)
-        back_height = 2.5 + random.uniform(-0.5, 0.5)
-        
-        # Modify based on descriptive words
-        if 'wide' in prompt_lower or 'big' in prompt_lower:
-            seat_width *= 1.3
-            seat_depth *= 1.2
-        elif 'narrow' in prompt_lower or 'small' in prompt_lower:
-            seat_width *= 0.8
-            seat_depth *= 0.9
-        
-        if 'high' in prompt_lower or 'tall' in prompt_lower:
-            back_height *= 1.4
-            seat_height *= 1.2
-        elif 'low' in prompt_lower or 'short' in prompt_lower:
-            back_height *= 0.7
-            seat_height *= 0.8
-        
-        # Generate chair with variations
-        sw, sd, sh, bh = seat_width, seat_depth, seat_height, back_height
-        
-        vertices = [
-            # Seat
-            (-sw, -sd, sh), (sw, -sd, sh), (sw, sd, sh), (-sw, sd, sh),
-            (-sw, -sd, sh*0.8), (sw, -sd, sh*0.8), (sw, sd, sh*0.8), (-sw, sd, sh*0.8),
-            # Backrest
-            (-sw, sd*0.8, bh), (sw, sd*0.8, bh), (sw, sd, bh), (-sw, sd, bh),
-            (-sw, sd*0.8, sh), (sw, sd*0.8, sh), (sw, sd, sh), (-sw, sd, sh),
-        ]
-        
-        # Add legs with some variation
-        leg_positions = [
-            (-sw*0.8, -sd*0.8), (sw*0.8, -sd*0.8), 
-            (-sw*0.8, sd*0.8), (sw*0.8, sd*0.8)
-        ]
-        
-        for i, (lx, ly) in enumerate(leg_positions):
-            leg_width = 0.1 + random.uniform(-0.02, 0.02)
-            vertices.extend([
-                (lx - leg_width, ly - leg_width, 0),
-                (lx + leg_width, ly - leg_width, 0),
-                (lx + leg_width, ly + leg_width, 0),
-                (lx - leg_width, ly + leg_width, 0)
-            ])
-        
-        faces = [
-            # Seat top and bottom
-            (0, 1, 2), (0, 2, 3), (4, 7, 6), (4, 6, 5),
-            # Backrest
-            (8, 9, 10), (8, 10, 11), (12, 15, 14), (12, 14, 13),
-            # Legs (simplified)
-            (16, 17, 18), (16, 18, 19), (20, 21, 22), (20, 22, 23),
-            (24, 25, 26), (24, 26, 27), (28, 29, 30), (28, 30, 31)
-        ]
-        
-        return vertices, faces
-    
-    def _generate_cup_shape(self, prompt_lower, seed):
-        """Generate a cup-like shape."""
-        import math
-        import random
-        random.seed(seed)
-        
-        vertices = []
-        faces = []
-        
-        # Generate cup with cylindrical shape and variations
-        segments = 16 + random.randint(-4, 4)
-        height = 2.0 + random.uniform(-0.5, 0.5)
-        outer_radius = 1.0 + random.uniform(-0.2, 0.3)
-        inner_radius = 0.8 + random.uniform(-0.1, 0.1)
-        
-        # Modify based on descriptive words
-        if 'tall' in prompt_lower:
-            height *= 1.5
-        elif 'short' in prompt_lower:
-            height *= 0.7
-        
-        if 'wide' in prompt_lower:
-            outer_radius *= 1.3
-        elif 'narrow' in prompt_lower:
-            outer_radius *= 0.8
-        
-        # Outer vertices
-        for i in range(segments):
-            angle = (i / segments) * 2 * math.pi
-            x_outer = outer_radius * math.cos(angle)
-            y_outer = outer_radius * math.sin(angle)
-            x_inner = inner_radius * math.cos(angle)
-            y_inner = inner_radius * math.sin(angle)
-            
-            # Bottom outer and inner
-            vertices.extend([(x_outer, y_outer, 0), (x_inner, y_inner, 0)])
-            # Top outer and inner
-            vertices.extend([(x_outer, y_outer, height), (x_inner, y_inner, height)])
-        
-        # Generate faces (simplified)
-        for i in range(segments):
-            next_i = (i + 1) % segments
-            base = i * 4
-            next_base = next_i * 4
-            
-            # Outer wall
-            faces.extend([
-                (base, base + 2, next_base + 2), (base, next_base + 2, next_base),
-                # Inner wall
-                (base + 1, next_base + 3, base + 3), (base + 1, next_base + 1, next_base + 3),
-                # Bottom
-                (base, next_base, base + 1), (next_base, next_base + 1, base + 1)
-            ])
-        
-        return vertices, faces
-    
-    def _generate_tree_shape(self, prompt_lower, seed):
-        """Generate a tree-like shape with variations."""
-    import math
-    import random
-    random.seed(seed)
-    
-    vertices = []
-    faces = []
-    
-    # Tree parameters with variations
-    trunk_height = 3.0 + random.uniform(-0.5, 1.0)
-    trunk_radius = 0.3 + random.uniform(-0.1, 0.1)
-    crown_radius = 1.5 + random.uniform(-0.3, 0.5)
-    
-    # Modify based on descriptive words
-    if 'tall' in prompt_lower or 'giant' in prompt_lower:
-        trunk_height *= 1.8
-        crown_radius *= 1.2
-    elif 'short' in prompt_lower or 'small' in prompt_lower:
-        trunk_height *= 0.6
-        crown_radius *= 0.8
-    
-    if 'thick' in prompt_lower or 'wide' in prompt_lower:
-        trunk_radius *= 1.5
-        crown_radius *= 1.4
-    elif 'thin' in prompt_lower or 'narrow' in prompt_lower:
-        trunk_radius *= 0.7
-        crown_radius *= 0.9
-    
-    # Different tree types
-    if 'pine' in prompt_lower or 'fir' in prompt_lower:
-        crown_radius *= 0.7  # Narrower for conifers
-        trunk_height *= 1.3
-    elif 'oak' in prompt_lower or 'maple' in prompt_lower:
-        crown_radius *= 1.3  # Broader for deciduous
-        trunk_height *= 0.9
-    
-    # Trunk (cylinder)
-    segments = 8 + random.randint(-2, 2)
-    
-    for i in range(segments):
-        angle = (i / segments) * 2 * math.pi
-        x = trunk_radius * math.cos(angle)
-        y = trunk_radius * math.sin(angle)
-        vertices.extend([(x, y, 0), (x, y, trunk_height)])
-    
-    # Crown (sphere approximation with variation)
-    crown_center = (0, 0, trunk_height + crown_radius * 0.7)
-    crown_segments = 12 + random.randint(-2, 4)
-    
-    for i in range(crown_segments):
-        for j in range(crown_segments):
-            u = (i / crown_segments) * 2 * math.pi
-            v = (j / crown_segments) * math.pi
-            
-            # Add some noise for organic look
-            radius_variation = crown_radius * (1.0 + random.uniform(-0.2, 0.2))
-            
-            x = crown_center[0] + radius_variation * math.cos(u) * math.sin(v)
-            y = crown_center[1] + radius_variation * math.sin(u) * math.sin(v)  
-            z = crown_center[2] + radius_variation * math.cos(v)
-            
-            vertices.append((x, y, z))
-    
-    # Generate faces (simplified)
-    trunk_faces = []
-    for i in range(segments):
-        next_i = (i + 1) % segments
-        v1 = i * 2
-        v2 = i * 2 + 1
-        v3 = next_i * 2
-        v4 = next_i * 2 + 1
-        trunk_faces.extend([(v1, v3, v2), (v2, v3, v4)])
-    
-    # Crown faces (simplified grid)
-    crown_start = segments * 2
-    for i in range(crown_segments - 1):
-        for j in range(crown_segments - 1):
-            v1 = crown_start + i * crown_segments + j
-            v2 = crown_start + i * crown_segments + (j + 1)
-            v3 = crown_start + (i + 1) * crown_segments + j
-            v4 = crown_start + (i + 1) * crown_segments + (j + 1)
-            
-            trunk_faces.extend([(v1, v2, v3), (v2, v4, v3)])
-    
-    faces.extend(trunk_faces)
-    
-    return vertices, faces
-    
-    def _generate_house_shape(self, prompt_lower, seed):
-        """Generate a house-like shape with variations."""
-        import random
-        random.seed(seed)
-        
-        # Basic house dimensions with variations
-        width = 4.0 + random.uniform(-0.5, 1.0)
-        depth = 4.0 + random.uniform(-0.5, 1.0)
-        height = 2.0 + random.uniform(-0.3, 0.8)
-        roof_height = 2.0 + random.uniform(-0.5, 1.0)
-        
-        # Modify based on descriptive words
-        if 'big' in prompt_lower or 'large' in prompt_lower or 'mansion' in prompt_lower:
-            width *= 1.5
-            depth *= 1.4
-            height *= 1.3
-        elif 'small' in prompt_lower or 'tiny' in prompt_lower or 'cottage' in prompt_lower:
-            width *= 0.7
-            depth *= 0.8
-            height *= 0.8
-        
-        if 'tall' in prompt_lower or 'tower' in prompt_lower:
-            height *= 2.0
-            roof_height *= 1.5
-        elif 'low' in prompt_lower or 'ranch' in prompt_lower:
-            height *= 0.6
-            roof_height *= 0.7
-        
-        # Different house styles
-        if 'cabin' in prompt_lower or 'log' in prompt_lower:
-            height *= 0.8
-            roof_height *= 1.2
-        elif 'castle' in prompt_lower or 'fortress' in prompt_lower:
-            height *= 1.8
-            width *= 1.3
-            depth *= 1.3
-        
-        w, d, h = width/2, depth/2, height
-        
-        vertices = [
-            # Base cube (house body)
-            (-w, -d, 0), (w, -d, 0), (w, d, 0), (-w, d, 0),
-            (-w, -d, h), (w, -d, h), (w, d, h), (-w, d, h),
-            # Extended roof base
-            (-w*1.1, -d*1.1, h), (w*1.1, -d*1.1, h), 
-            (w*1.1, d*1.1, h), (-w*1.1, d*1.1, h),
-            # Roof peak variations
-            (0, 0, h + roof_height)  # Central peak
-        ]
-        
-        # Add variation: chimney if mentioned or randomly
-        if 'chimney' in prompt_lower or random.random() > 0.7:
-            chimney_x = w * 0.6
-            chimney_y = d * 0.3
-            chimney_width = 0.3
-            chimney_height = h + roof_height * 0.6
-            
-            vertices.extend([
-                (chimney_x - chimney_width, chimney_y - chimney_width, h),
-                (chimney_x + chimney_width, chimney_y - chimney_width, h),
-                (chimney_x + chimney_width, chimney_y + chimney_width, h),
-                (chimney_x - chimney_width, chimney_y + chimney_width, h),
-                (chimney_x - chimney_width, chimney_y - chimney_width, chimney_height),
-                (chimney_x + chimney_width, chimney_y - chimney_width, chimney_height),
-                (chimney_x + chimney_width, chimney_y + chimney_width, chimney_height),
-                (chimney_x - chimney_width, chimney_y + chimney_width, chimney_height)
-            ])
-        
-        faces = [
-            # House walls
-            (0, 1, 5), (0, 5, 4),  # Front
-            (2, 3, 7), (2, 7, 6),  # Back
-            (3, 0, 4), (3, 4, 7),  # Left
-            (1, 2, 6), (1, 6, 5),  # Right
-            # Base
-            (0, 3, 2), (0, 2, 1),
-            # Roof faces
-            (8, 9, 12), (9, 10, 12), (10, 11, 12), (11, 8, 12)
-        ]
-        
-        # Add chimney faces if present
-        if len(vertices) > 13:  # Chimney was added
-            chimney_start = 13
-            faces.extend([
-                # Chimney walls
-                (chimney_start, chimney_start+1, chimney_start+5), (chimney_start, chimney_start+5, chimney_start+4),
-                (chimney_start+1, chimney_start+2, chimney_start+6), (chimney_start+1, chimney_start+6, chimney_start+5),
-                (chimney_start+2, chimney_start+3, chimney_start+7), (chimney_start+2, chimney_start+7, chimney_start+6),
-                (chimney_start+3, chimney_start, chimney_start+4), (chimney_start+3, chimney_start+4, chimney_start+7),
-                # Chimney top
-                (chimney_start+4, chimney_start+5, chimney_start+6), (chimney_start+4, chimney_start+6, chimney_start+7)
-            ])
-        
-        return vertices, faces
-    
-    def _generate_geometric_shape(self, prompt_lower, seed):
-        """Generate an interesting geometric shape with variations."""
-        import math
-        import random
-        random.seed(seed)
-        
-        vertices = []
-        faces = []
-        
-        # Shape selection based on prompt
-        if 'torus' in prompt_lower or 'donut' in prompt_lower or 'ring' in prompt_lower:
-            # Generate a torus-like shape
-            major_radius = 2.0 + random.uniform(-0.5, 0.8)
-            minor_radius = 0.8 + random.uniform(-0.2, 0.3)
-            major_segments = 16 + random.randint(-4, 4)
-            minor_segments = 10 + random.randint(-2, 2)
-            
-            # Modify based on descriptive words
-            if 'big' in prompt_lower or 'wide' in prompt_lower:
-                major_radius *= 1.4
-            elif 'small' in prompt_lower or 'thin' in prompt_lower:
-                major_radius *= 0.7
-                minor_radius *= 0.8
-            
-            for i in range(major_segments):
-                for j in range(minor_segments):
-                    u = (i / major_segments) * 2 * math.pi
-                    v = (j / minor_segments) * 2 * math.pi
-                    
-                    x = (major_radius + minor_radius * math.cos(v)) * math.cos(u)
-                    y = (major_radius + minor_radius * math.cos(v)) * math.sin(u)
-                    z = minor_radius * math.sin(v)
-                    
-                    vertices.append((x, y, z))
-            
-            # Generate faces
-            for i in range(major_segments):
-                for j in range(minor_segments):
-                    current = i * minor_segments + j
-                    next_i = ((i + 1) % major_segments) * minor_segments + j
-                    next_j = i * minor_segments + ((j + 1) % minor_segments)
-                    next_both = ((i + 1) % major_segments) * minor_segments + ((j + 1) % minor_segments)
-                    
-                    faces.extend([(current, next_i, next_both), (current, next_both, next_j)])
-        
-        elif 'spiral' in prompt_lower or 'helix' in prompt_lower:
-            # Generate spiral/helix shape
-            height = 4.0 + random.uniform(-1.0, 2.0)
-            radius = 1.5 + random.uniform(-0.3, 0.5)
-            turns = 3 + random.randint(-1, 2)
-            segments = 50 + random.randint(-10, 20)
-            
-            for i in range(segments):
-                t = (i / segments) * turns * 2 * math.pi
-                z = (i / segments) * height
-                
-                x = radius * math.cos(t)
-                y = radius * math.sin(t)
-                vertices.append((x, y, z))
-                
-                # Add inner radius for thickness
-                inner_x = radius * 0.7 * math.cos(t)
-                inner_y = radius * 0.7 * math.sin(t)
-                vertices.append((inner_x, inner_y, z))
-            
-            # Generate faces for spiral
-            for i in range(segments - 1):
-                v1 = i * 2
-                v2 = i * 2 + 1
-                v3 = (i + 1) * 2
-                v4 = (i + 1) * 2 + 1
-                
-                faces.extend([(v1, v3, v2), (v2, v3, v4)])
-        
-        else:
-            # Generate default crystal-like shape
-            num_faces = 8 + random.randint(-2, 4)
-            height = 3.0 + random.uniform(-0.8, 1.2)
-            radius = 1.5 + random.uniform(-0.4, 0.6)
-            
-            # Modify based on descriptive words
-            if 'tall' in prompt_lower:
-                height *= 1.8
-            elif 'short' in prompt_lower:
-                height *= 0.6
-            
-            if 'wide' in prompt_lower:
-                radius *= 1.5
-            elif 'narrow' in prompt_lower:
-                radius *= 0.7
-            
-            # Center vertices
-            vertices.extend([(0, 0, 0), (0, 0, height)])  # Bottom and top center
-            
-            # Ring vertices
-            for i in range(num_faces):
-                angle = (i / num_faces) * 2 * math.pi
-                x = radius * math.cos(angle)
-                y = radius * math.sin(angle)
-                
-                vertices.extend([
-                    (x, y, height * 0.2),      # Lower ring
-                    (x * 0.7, y * 0.7, height * 0.8)  # Upper ring (tapered)
-                ])
-            
-            # Generate faces
-            for i in range(num_faces):
-                next_i = (i + 1) % num_faces
-                
-                lower_v = 2 + i * 2
-                upper_v = 2 + i * 2 + 1
-                next_lower_v = 2 + next_i * 2
-                next_upper_v = 2 + next_i * 2 + 1
-                
-                # Bottom faces
-                faces.append((0, next_lower_v, lower_v))
-                # Top faces
-                faces.append((1, upper_v, next_upper_v))
-                # Side faces
-                faces.extend([
-                    (lower_v, next_lower_v, upper_v),
-                    (next_lower_v, next_upper_v, upper_v)
-                ])
-        
-        return vertices, faces
-    
-    def _generate_human_like_shape(self, prompt_lower, seed):
-        """Generate a human-like figure shape."""
-        import math
-        import random
-        random.seed(seed)
-        
-        vertices = []
-        faces = []
-        
-        # Basic proportions with variation
-        height = 2.0 + random.uniform(-0.3, 0.5)
-        width = 0.6 + random.uniform(-0.1, 0.2)
-        
-        # Modify based on descriptive words
-        if 'tall' in prompt_lower or 'giant' in prompt_lower:
-            height *= 1.5
-        elif 'short' in prompt_lower or 'dwarf' in prompt_lower:
-            height *= 0.7
-        
-        if 'fat' in prompt_lower or 'wide' in prompt_lower:
-            width *= 1.4
-        elif 'thin' in prompt_lower or 'slim' in prompt_lower:
-            width *= 0.7
-        
-        # Head (sphere approximation)
-        head_radius = width * 0.15
-        head_center = (0, 0, height * 0.9)
-        
-        # Body (cylinder/ellipsoid)
-        body_height = height * 0.6
-        body_width = width
-        
-        # Generate simplified human-like shape
-        segments = 12
-        for i in range(segments):
-            angle = (i / segments) * 2 * math.pi
-            
-            # Head vertices
-            x_head = head_center[0] + head_radius * math.cos(angle)
-            y_head = head_center[1] + head_radius * math.sin(angle)
-            vertices.append((x_head, y_head, head_center[2]))
-            
-            # Torso vertices (multiple levels)
-            for level in range(5):
-                z_level = height * 0.3 + (body_height / 4) * level
-                body_scale = 1.0 - (level * 0.1)  # Taper towards head
-                
-                x_body = body_scale * body_width * math.cos(angle)
-                y_body = body_scale * body_width * math.sin(angle)
-                vertices.append((x_body, y_body, z_level))
-        
-        # Simple face generation
-        for i in range(segments):
-            next_i = (i + 1) % segments
-            
-            # Head faces
-            faces.append((i, next_i, segments))  # Top
-            
-            # Body faces
-            for level in range(4):
-                v1 = i + segments + level * segments
-                v2 = next_i + segments + level * segments
-                v3 = i + segments + (level + 1) * segments
-                v4 = next_i + segments + (level + 1) * segments
-                
-                faces.extend([(v1, v2, v3), (v2, v4, v3)])
-        
-        return vertices, faces
-    
-    def _generate_vehicle_shape(self, prompt_lower, seed):
-        """Generate a vehicle-like shape."""
-        import random
-        random.seed(seed)
-        
-        # Basic car proportions
-        length = 4.0 + random.uniform(-0.5, 1.0)
-        width = 1.8 + random.uniform(-0.2, 0.4)
-        height = 1.5 + random.uniform(-0.2, 0.3)
-        
-        # Modify based on type
-        if 'truck' in prompt_lower or 'bus' in prompt_lower:
-            length *= 1.5
-            height *= 1.3
-        elif 'sports' in prompt_lower or 'race' in prompt_lower:
-            height *= 0.7
-            length *= 1.2
-        
-        vertices = [
-            # Main body (box)
-            (-length/2, -width/2, 0), (length/2, -width/2, 0),
-            (length/2, width/2, 0), (-length/2, width/2, 0),
-            (-length/2, -width/2, height*0.6), (length/2, -width/2, height*0.6),
-            (length/2, width/2, height*0.6), (-length/2, width/2, height*0.6),
-            # Cabin
-            (-length*0.3, -width*0.4, height*0.6), (length*0.2, -width*0.4, height*0.6),
-            (length*0.2, width*0.4, height*0.6), (-length*0.3, width*0.4, height*0.6),
-            (-length*0.3, -width*0.4, height), (length*0.2, -width*0.4, height),
-            (length*0.2, width*0.4, height), (-length*0.3, width*0.4, height)
-        ]
-        
-        faces = [
-            # Main body
-            (0, 1, 2), (0, 2, 3), (4, 7, 6), (4, 6, 5),
-            (0, 4, 5), (0, 5, 1), (2, 6, 7), (2, 7, 3),
-            (0, 3, 7), (0, 7, 4), (1, 5, 6), (1, 6, 2),
-            # Cabin
-            (8, 9, 10), (8, 10, 11), (12, 15, 14), (12, 14, 13),
-            (8, 12, 13), (8, 13, 9), (10, 14, 15), (10, 15, 11)
-        ]
-        
-        return vertices, faces
-    
-    def _generate_flower_shape(self, prompt_lower, seed):
-        """Generate a flower-like shape."""
-        import math
-        import random
-        random.seed(seed)
-        
-        vertices = []
-        faces = []
-        
-        # Flower parameters
-        petal_count = random.randint(5, 8)
-        if 'rose' in prompt_lower:
-            petal_count = random.randint(20, 30)
-        elif 'daisy' in prompt_lower:
-            petal_count = random.randint(12, 16)
-        
-        center_radius = 0.2
-        petal_length = 1.0 + random.uniform(-0.2, 0.4)
-        petal_width = 0.4 + random.uniform(-0.1, 0.2)
-        
-        # Center
-        vertices.append((0, 0, 0))  # Center point
-        
-        # Generate petals
-        for i in range(petal_count):
-            angle = (i / petal_count) * 2 * math.pi
-            
-            # Petal base
-            base_x = center_radius * math.cos(angle)
-            base_y = center_radius * math.sin(angle)
-            vertices.append((base_x, base_y, 0))
-            
-            # Petal tip
-            tip_x = (center_radius + petal_length) * math.cos(angle)
-            tip_y = (center_radius + petal_length) * math.sin(angle)
-            vertices.append((tip_x, tip_y, 0.1))
-            
-            # Petal sides
-            side_angle1 = angle - 0.2
-            side_angle2 = angle + 0.2
-            side_dist = center_radius + petal_length * 0.7
-            
-            side1_x = side_dist * math.cos(side_angle1)
-            side1_y = side_dist * math.sin(side_angle1)
-            vertices.append((side1_x, side1_y, 0.05))
-            
-            side2_x = side_dist * math.cos(side_angle2)
-            side2_y = side_dist * math.sin(side_angle2)
-            vertices.append((side2_x, side2_y, 0.05))
-        
-        # Generate faces for petals
-        for i in range(petal_count):
-            base_idx = 1 + i * 4
-            tip_idx = base_idx + 1
-            side1_idx = base_idx + 2
-            side2_idx = base_idx + 3
-            
-            # Connect to center and form petal
-            faces.extend([
-                (0, base_idx, side1_idx),
-                (0, side1_idx, side2_idx),
-                (0, side2_idx, base_idx),
-                (base_idx, tip_idx, side1_idx),
-                (base_idx, side2_idx, tip_idx),
-                (side1_idx, tip_idx, side2_idx)
-            ])
-        
-        return vertices, faces
-    
-    def _generate_adaptive_shape(self, prompt_lower, seed):
-        """Generate an adaptive shape based on prompt analysis."""
-        import math
-        import random
-        random.seed(seed)
-        
-        vertices = []
-        faces = []
-        
-        # Analyze prompt for shape characteristics
-        complexity = len(prompt_lower.split()) + random.randint(0, 5)
-        
-        # Base shape selection based on prompt sentiment
-        if any(word in prompt_lower for word in ['round', 'sphere', 'ball', 'circular']):
-            # Generate sphere-like shape
-            segments = 8 + (complexity % 8)
-            radius = 1.0 + random.uniform(-0.3, 0.5)
-            
-            for i in range(segments):
-                for j in range(segments//2):
-                    u = (i / segments) * 2 * math.pi
-                    v = (j / (segments//2)) * math.pi
-                    
-                    x = radius * math.cos(u) * math.sin(v)
-                    y = radius * math.sin(u) * math.sin(v)
-                    z = radius * math.cos(v)
-                    
-                    vertices.append((x, y, z))
-            
-            # Generate faces
-            for i in range(segments):
-                for j in range(segments//2 - 1):
-                    v1 = i * (segments//2) + j
-                    v2 = i * (segments//2) + (j + 1)
-                    v3 = ((i + 1) % segments) * (segments//2) + j
-                    v4 = ((i + 1) % segments) * (segments//2) + (j + 1)
-                    
-                    faces.extend([(v1, v2, v3), (v2, v4, v3)])
-        
-        else:
-            # Generate abstract geometric shape
-            num_points = 6 + (complexity % 10)
-            height = 2.0 + random.uniform(-0.5, 1.0)
-            
-            for i in range(num_points):
-                angle = (i / num_points) * 2 * math.pi
-                radius = 1.0 + 0.3 * math.sin(angle * 3)  # Wavy outline
-                
-                x = radius * math.cos(angle)
-                y = radius * math.sin(angle)
-                vertices.extend([(x, y, 0), (x * 0.8, y * 0.8, height)])
-            
-            # Generate faces
-            for i in range(num_points):
-                next_i = (i + 1) % num_points
-                v1 = i * 2
-                v2 = v1 + 1
-                v3 = next_i * 2
-                v4 = v3 + 1
-                
-                faces.extend([(v1, v3, v2), (v2, v3, v4)])
-        
-        return vertices, faces
 
+    def _generate_dragon_like_shape(self, prompt_lower, seed, complexity, color_scale):
+        """Generate dragon, wyvern, drake shapes."""
+        import math
+        import random
+        random.seed(seed)
+        
+        vertices = []
+        faces = []
+        
+        # Dragon type affects proportions
+        if 'wyvern' in prompt_lower:
+            body_length = 6.0 * color_scale
+            wing_span = 8.0 * color_scale
+            neck_length = 2.0 * color_scale
+        elif 'drake' in prompt_lower:
+            body_length = 4.0 * color_scale
+            wing_span = 5.0 * color_scale
+            neck_length = 1.5 * color_scale
+        else:  # dragon
+            body_length = 8.0 * color_scale
+            wing_span = 10.0 * color_scale
+            neck_length = 3.0 * color_scale
+        
+        # Serpentine body
+        body_segments = 20 + complexity
+        for i in range(body_segments):
+            t = i / body_segments
+            
+            # Sinuous dragon body curve
+            spine_curve = math.sin(t * math.pi * 2) * 0.5
+            body_radius = 1.0 - (t * 0.3)  # Tapers towards tail
+            
+            for j in range(8):
+                angle = (j / 8) * 2 * math.pi
+                x = (body_radius * math.cos(angle)) + spine_curve
+                y = body_radius * math.sin(angle)
+                z = t * body_length
+                vertices.append((x, y, z))
+        
+        # Dragon head (enlarged front section)
+        head_segments = 6
+        for i in range(head_segments):
+            t = i / head_segments
+            head_radius = 1.5 + t * 0.5  # Expanding head
+            z_pos = -neck_length + (t * neck_length)
+            
+            for j in range(8):
+                angle = (j / 8) * 2 * math.pi
+                x = head_radius * math.cos(angle)
+                y = head_radius * math.sin(angle)
+                z = z_pos
+                vertices.append((x, y, z))
+        
+        # Wings (if not a drake without wings)
+        if wing_span > 0:
+            wing_membrane_points = 12
+            for side in [-1, 1]:  # Left and right wings
+                for i in range(wing_membrane_points):
+                    for j in range(6):
+                        u = (i / wing_membrane_points) * math.pi
+                        v = (j / 5) * 0.8
+                        
+                        x = side * (wing_span/2 * math.sin(u)) * (1 - v * 0.3)
+                        y = math.cos(u) * wing_span/4 + body_length/3
+                        z = v * body_length/2 + body_length/4
+                        vertices.append((x, y, z))
+        
+        # Generate dragon faces
+        total_vertices = len(vertices)
+        for i in range(total_vertices - 2):
+            if i % 3 == 0 and i + 2 < total_vertices:
+                faces.append((i, i+1, i+2))
+        
+        return vertices, faces
+    
+    def _generate_tree_shape(self, prompt_lower, seed, complexity, color_scale):
+        """Generate a tree-like shape with variations."""
+        import math
+        import random
+        random.seed(seed)
+        
+        vertices = []
+        faces = []
+        
+        # Tree type affects structure
+        if 'oak' in prompt_lower:
+            trunk_radius = 0.5 * color_scale
+            height = 6.0 * color_scale
+            branch_density = complexity + 5
+        elif 'pine' in prompt_lower:
+            trunk_radius = 0.3 * color_scale
+            height = 8.0 * color_scale
+            branch_density = complexity + 3
+        elif 'willow' in prompt_lower:
+            trunk_radius = 0.4 * color_scale
+            height = 5.0 * color_scale
+            branch_density = complexity + 8
+        else:  # generic tree
+            trunk_radius = 0.4 * color_scale
+            height = 6.0 * color_scale
+            branch_density = complexity + 4
+        
+        # Trunk
+        trunk_segments = 8
+        trunk_height_segments = 10
+        for h in range(trunk_height_segments):
+            trunk_height = (h / trunk_height_segments) * (height / 2)
+            radius = trunk_radius * (1 - h / trunk_height_segments * 0.3)
+            
+            for i in range(trunk_segments):
+                angle = (i / trunk_segments) * 2 * math.pi
+                x = radius * math.cos(angle)
+                y = radius * math.sin(angle)
+                vertices.append((x, y, trunk_height))
+        
+        # Branches
+        for branch in range(branch_density):
+            branch_height = random.uniform(height * 0.3, height * 0.9)
+            branch_angle = random.uniform(0, 2 * math.pi)
+            branch_length = random.uniform(height * 0.2, height * 0.6)
+            branch_radius = random.uniform(trunk_radius * 0.1, trunk_radius * 0.4)
+            
+            # Branch segments
+            branch_segments = 6
+            for i in range(branch_segments):
+                t = i / branch_segments
+                pos_x = math.cos(branch_angle) * (t * branch_length)
+                pos_y = math.sin(branch_angle) * (t * branch_length)
+                pos_z = branch_height + t * height * 0.2
+                
+                # Branch cross-section
+                for j in range(4):
+                    cross_angle = (j / 4) * 2 * math.pi
+                    radius = branch_radius * (1 - t * 0.8)
+                    x = pos_x + radius * math.cos(cross_angle)
+                    y = pos_y + radius * math.sin(cross_angle)
+                    vertices.append((x, y, pos_z))
+        
+        # Generate faces
+        for i in range(len(vertices) - 2):
+            if i % 4 != 3:
+                faces.append((i, i+1, i+2))
+        
+        return vertices, faces
+    
+    def _generate_chair_shape(self, prompt_lower, seed, complexity, color_scale):
+        """Generate chair, throne, seat shapes."""
+        import random
+        random.seed(seed)
+        
+        vertices = []
+        faces = []
+        
+        # Chair type affects design
+        if 'throne' in prompt_lower:
+            seat_width = 2.5 * color_scale
+            seat_depth = 2.0 * color_scale
+            back_height = 4.0 * color_scale
+            arm_rests = True
+            ornate = True
+        elif 'bench' in prompt_lower:
+            seat_width = 4.0 * color_scale
+            seat_depth = 1.5 * color_scale
+            back_height = 2.0 * color_scale
+            arm_rests = False
+            ornate = False
+        else:  # chair
+            seat_width = 1.8 * color_scale
+            seat_depth = 1.6 * color_scale
+            back_height = 3.0 * color_scale
+            arm_rests = random.choice([True, False])
+            ornate = False
+        
+        # Seat
+        seat_height = 1.5 * color_scale
+        vertices.extend([
+            (-seat_width/2, -seat_depth/2, seat_height),
+            (seat_width/2, -seat_depth/2, seat_height),
+            (seat_width/2, seat_depth/2, seat_height),
+            (-seat_width/2, seat_depth/2, seat_height)
+        ])
+        
+        # Legs
+        leg_positions = [
+            (-seat_width/2, -seat_depth/2), (seat_width/2, -seat_depth/2),
+            (seat_width/2, seat_depth/2), (-seat_width/2, seat_depth/2)
+        ]
+        
+        for pos_x, pos_y in leg_positions:
+            leg_thickness = 0.1 * color_scale
+            vertices.extend([
+                (pos_x - leg_thickness, pos_y - leg_thickness, 0),
+                (pos_x + leg_thickness, pos_y - leg_thickness, 0),
+                (pos_x + leg_thickness, pos_y + leg_thickness, 0),
+                (pos_x - leg_thickness, pos_y + leg_thickness, 0),
+                (pos_x - leg_thickness, pos_y - leg_thickness, seat_height),
+                (pos_x + leg_thickness, pos_y - leg_thickness, seat_height),
+                (pos_x + leg_thickness, pos_y + leg_thickness, seat_height),
+                (pos_x - leg_thickness, pos_y + leg_thickness, seat_height)
+            ])
+        
+        # Backrest
+        if back_height > 0:
+            vertices.extend([
+                (-seat_width/2, seat_depth/2, seat_height),
+                (seat_width/2, seat_depth/2, seat_height),
+                (seat_width/2, seat_depth/2, seat_height + back_height),
+                (-seat_width/2, seat_depth/2, seat_height + back_height)
+            ])
+        
+        # Armrests
+        if arm_rests:
+            arm_height = seat_height + back_height * 0.6
+            arm_width = 0.3 * color_scale
+            for side in [-1, 1]:
+                arm_x = side * (seat_width/2 + arm_width/2)
+                vertices.extend([
+                    (arm_x - arm_width/2, -seat_depth/2, seat_height),
+                    (arm_x + arm_width/2, -seat_depth/2, seat_height),
+                    (arm_x + arm_width/2, seat_depth/2, seat_height),
+                    (arm_x - arm_width/2, seat_depth/2, seat_height),
+                    (arm_x - arm_width/2, -seat_depth/2, arm_height),
+                    (arm_x + arm_width/2, -seat_depth/2, arm_height),
+                    (arm_x + arm_width/2, seat_depth/2, arm_height),
+                    (arm_x - arm_width/2, seat_depth/2, arm_height)
+                ])
+        
+        # Generate faces (simplified box faces)
+        box_count = 1 + 4 + (1 if back_height > 0 else 0) + (2 if arm_rests else 0)
+        for box in range(box_count):
+            if box == 0:  # Seat
+                base = 0
+            elif box <= 4:  # Legs
+                base = 4 + (box-1) * 8
+            elif back_height > 0 and box == 5:  # Backrest
+                base = 4 + 4 * 8
+            else:  # Armrests
+                base = 4 + 4 * 8 + (4 if back_height > 0 else 0) + (box - (6 if back_height > 0 else 5)) * 8
+            
+            if box == 0:  # Seat is quad
+                faces.append((0, 1, 2))
+                faces.append((0, 2, 3))
+            else:  # Boxes
+                # Generate standard box faces
+                faces.extend([
+                    (base, base+1, base+2), (base, base+2, base+3),  # Bottom
+                    (base+4, base+7, base+6), (base+4, base+6, base+5),  # Top
+                    (base, base+4, base+5), (base, base+5, base+1),  # Sides
+                    (base+1, base+5, base+6), (base+1, base+6, base+2),
+                    (base+2, base+6, base+7), (base+2, base+7, base+3),
+                    (base+3, base+7, base+4), (base+3, base+4, base+0)
+                ])
+        
+        return vertices, faces
+    
+    def _generate_house_shape(self, prompt_lower, seed, complexity, color_scale):
+        """Generate house, home, building shapes."""
+        import math
+        import random
+        random.seed(seed)
+        
+        vertices = []
+        faces = []
+        
+        # House type affects structure
+        if 'cabin' in prompt_lower:
+            width = 4.0 * color_scale
+            depth = 3.5 * color_scale
+            height = 2.5 * color_scale
+            roof_type = 'peaked'
+        elif 'hut' in prompt_lower:
+            width = 3.0 * color_scale
+            depth = 3.0 * color_scale
+            height = 2.0 * color_scale
+            roof_type = 'round'
+        else:  # house/home/building
+            width = 5.0 * color_scale
+            depth = 4.0 * color_scale
+            height = 3.0 * color_scale
+            roof_type = 'peaked'
+        
+        # Main structure base
+        vertices.extend([
+            (-width/2, -depth/2, 0), (width/2, -depth/2, 0),
+            (width/2, depth/2, 0), (-width/2, depth/2, 0),
+            (-width/2, -depth/2, height), (width/2, -depth/2, height),
+            (width/2, depth/2, height), (-width/2, depth/2, height)
+        ])
+        
+        # Roof
+        if roof_type == 'peaked':
+            roof_peak = height + 1.5 * color_scale
+            vertices.extend([
+                (0, -depth/2, roof_peak), (0, depth/2, roof_peak)
+            ])
+        elif roof_type == 'round':
+            # Dome-like roof
+            dome_segments = 8
+            for i in range(dome_segments):
+                for j in range(dome_segments):
+                    u = (i / dome_segments) * math.pi
+                    v = (j / dome_segments) * 2 * math.pi
+                    
+                    radius = min(width, depth) / 2
+                    dome_height = radius * math.sin(u)
+                    x = radius * math.cos(u) * math.cos(v)
+                    y = radius * math.cos(u) * math.sin(v)
+                    z = height + dome_height
+                    vertices.append((x, y, z))
+        
+        # Additional details based on complexity
+        for detail in range(complexity // 2):
+            # Windows
+            if random.random() < 0.7:
+                wall = random.randint(0, 3)  # Choose wall
+                window_size = 0.3 * color_scale
+                
+                if wall == 0:  # Front wall
+                    win_x = random.uniform(-width/2 + window_size, width/2 - window_size)
+                    win_y = -depth/2 - 0.01
+                    win_z = random.uniform(height * 0.2, height * 0.8)
+                elif wall == 1:  # Right wall
+                    win_x = width/2 + 0.01
+                    win_y = random.uniform(-depth/2 + window_size, depth/2 - window_size)
+                    win_z = random.uniform(height * 0.2, height * 0.8)
+                # Add window geometry (simplified)
+                vertices.extend([
+                    (win_x - window_size/2, win_y, win_z - window_size/2),
+                    (win_x + window_size/2, win_y, win_z - window_size/2),
+                    (win_x + window_size/2, win_y, win_z + window_size/2),
+                    (win_x - window_size/2, win_y, win_z + window_size/2)
+                ])
+        
+        # Generate faces
+        # Main house body
+        faces.extend([
+            (0, 1, 2), (0, 2, 3),  # Bottom
+            (4, 7, 6), (4, 6, 5),  # Top
+            (0, 4, 5), (0, 5, 1),  # Sides
+            (1, 5, 6), (1, 6, 2),
+            (2, 6, 7), (2, 7, 3),
+            (3, 7, 4), (3, 4, 0)
+        ])
+        
+        # Roof faces
+        if roof_type == 'peaked':
+            faces.extend([
+                (4, 8, 5), (5, 8, 6), (6, 8, 9), (7, 9, 4),
+                (4, 9, 8), (6, 9, 7)
+            ])
+        
+    
+        return vertices, faces
+    
     async def _create_fallback_model(self, output_path: str, format: str, prompt: str, job_id: str):
         """Create a more sophisticated fallback 3D model when TRELLIS fails."""
         logger.info("Creating procedural fallback 3D model", format=format, job_id=job_id, prompt=prompt)
