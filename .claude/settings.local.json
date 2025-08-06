@@ -31,7 +31,13 @@
       "mcp__serena__insert_after_symbol",
       "Bash(docker exec:*)",
       "mcp__serena__insert_before_symbol",
-      "Bash(docker inspect:*)"
+      "Bash(docker inspect:*)",
+      "Bash(cat:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "mcp__serena__replace_symbol_body",
+      "Bash(awk:*)",
+      "Bash(docker logs:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -99,8 +99,15 @@ class MemoryWorker:
             
             # Generate actual files and upload to MinIO
             try:
-                from .file_generator import FileGenerator
-                generator = FileGenerator()
+                # Try TRELLIS-powered generation first
+                try:
+                    from .trellis_file_generator import TrellisFileGenerator
+                    generator = TrellisFileGenerator()
+                    self.logger.info("Using TRELLIS for 3D model generation", job_id=job_id)
+                except ImportError as e:
+                    self.logger.warning("TRELLIS not available, falling back to mock generator", error=str(e))
+                    from .file_generator import FileGenerator
+                    generator = FileGenerator()
                 
                 # Get prompt from job input_data
                 input_data = getattr(job, 'input_data', {})

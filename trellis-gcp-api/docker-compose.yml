@@ -90,12 +90,12 @@ services:
       exit 0;
       "
 
-  # Integrated Worker for processing jobs
-  worker:
+  # Mock Worker for processing jobs (without GPU)
+  worker-mock:
     build:
       context: .
       dockerfile: docker/Dockerfile.worker-mock
-    container_name: trellis-gcp-api-worker-1
+    container_name: trellis-gcp-api-worker-mock-1
     restart: unless-stopped
     environment:
       - PYTHONPATH=/app
@@ -114,11 +114,53 @@ services:
     networks:
       - trellis-network
     healthcheck:
-      test: ["CMD", "python", "-c", "print('Worker running')"]
+      test: ["CMD", "python", "-c", "print('Mock Worker running')"]
       interval: 30s
       timeout: 10s
       retries: 3
     command: python -m src.workers.memory_worker
+    profiles:
+      - mock
+
+  # TRELLIS Worker with GPU support for actual 3D model generation
+  worker-trellis:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker-trellis
+    container_name: trellis-gcp-api-worker-trellis-1
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - DEBUG=true
+      - SPCONV_ALGO=native
+    volumes:
+      - ./src:/app/src
+      - ./TRELLIS:/app/TRELLIS
+    depends_on:
+      - redis
+      - api
+    networks:
+      - trellis-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "print('TRELLIS Worker running')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: python -m src.workers.memory_worker
+# GPU support disabled for CPU-only development environment
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
   # Redis Commander for Redis management (dev tools)
   redis-commander:

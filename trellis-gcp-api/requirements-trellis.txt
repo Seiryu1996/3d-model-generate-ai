@@ -1,0 +1,22 @@
+# TRELLIS dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+numpy>=1.24.0
+imageio>=2.31.0
+trimesh>=3.21.0
+xformers>=0.0.20
+spconv-cu121>=2.3.6  # For CUDA 12.1, adjust based on your CUDA version
+
+# Core worker dependencies
+structlog==23.2.0
+redis==5.0.1
+pydantic==2.5.2
+pydantic-settings==2.1.0
+fastapi==0.104.1
+minio==7.2.0
+
+# Additional dependencies for 3D processing
+pillow>=10.0.0
+scipy>=1.10.0
+matplotlib>=3.7.0
