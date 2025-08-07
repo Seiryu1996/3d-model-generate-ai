@@ -36,17 +36,16 @@ class CPUAIGenerator:
         """Analyze text prompt to extract semantic features."""
         prompt_lower = prompt.lower()
         
-        # Extract semantic features
         features = {
             'complexity': len(prompt.split()) * 0.1,
             'smoothness': 0.5,
             'scale': 5.0,
             'density': 0.3,
             'organic': 0.5,
-            'symmetry': 0.5
+            'symmetry': 0.5,
+            'prompt': prompt
         }
         
-        # Keyword-based feature adjustment
         if any(word in prompt_lower for word in ['complex', 'detailed', 'intricate']):
             features['complexity'] *= 2.0
         if any(word in prompt_lower for word in ['simple', 'basic', 'minimal']):
@@ -115,35 +114,39 @@ class CPUAIGenerator:
     def generate_parametric_mesh(self, features):
         """Generate mesh using parametric equations."""
         
-        # Create base sphere/ellipsoid
-        u = np.linspace(0, 2 * np.pi, 50)
-        v = np.linspace(0, np.pi, 25)
+        prompt = features.get('prompt', '')
+        scale = features['scale']
+        complexity = features['complexity']
+        
+        # Use noise to generate mesh based on prompt
+        u = np.linspace(0, 2 * np.pi, int(20 + complexity * 30))
+        v = np.linspace(0, np.pi, int(10 + complexity * 15))
         U, V = np.meshgrid(u, v)
         
-        # Scale factors based on features
-        a = features['scale'] * (1 + features['complexity'] * 0.5)
-        b = features['scale'] * (1 + features['organic'] * 0.3)
-        c = features['scale'] * (1 + features['symmetry'] * 0.2)
+        # Generate vertices with noise deformation based on prompt
+        seed_val = hash(prompt) % 1000
+        np.random.seed(seed_val)
         
-        # Generate vertices
-        x = a * np.cos(U) * np.sin(V)
-        y = b * np.sin(U) * np.sin(V)
-        z = c * np.cos(V)
+        # Base shape with noise
+        x = scale * np.cos(U) * np.sin(V)
+        y = scale * np.sin(U) * np.sin(V) 
+        z = scale * np.cos(V)
         
-        # Add noise deformation
-        if features['smoothness'] < 0.7:
-            noise_factor = (1 - features['smoothness']) * 0.5
-            for i in range(x.shape[0]):
-                for j in range(x.shape[1]):
-                    noise_val = noise.pnoise3(x[i,j] * 0.1, y[i,j] * 0.1, z[i,j] * 0.1)
-                    x[i,j] += noise_val * noise_factor * features['scale']
-                    y[i,j] += noise_val * noise_factor * features['scale']
-                    z[i,j] += noise_val * noise_factor * features['scale']
+        # Apply prompt-based deformation
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                noise_val = noise.pnoise3(
+                    x[i,j] * 0.1 + seed_val, 
+                    y[i,j] * 0.1 + seed_val, 
+                    z[i,j] * 0.1 + seed_val
+                )
+                deform = noise_val * complexity * scale * 0.3
+                x[i,j] += deform
+                y[i,j] += deform  
+                z[i,j] += deform
         
-        # Convert to trimesh format
         vertices = np.column_stack([x.flatten(), y.flatten(), z.flatten()])
         
-        # Generate faces for quad mesh
         faces = []
         for i in range(x.shape[0] - 1):
             for j in range(x.shape[1] - 1):
@@ -152,7 +155,6 @@ class CPUAIGenerator:
                 v3 = (i + 1) * x.shape[1] + j
                 v4 = (i + 1) * x.shape[1] + (j + 1)
                 
-                # Two triangles per quad
                 faces.append([v1, v2, v3])
                 faces.append([v2, v4, v3])
         
