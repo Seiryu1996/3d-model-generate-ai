@@ -97,12 +97,12 @@ class MemoryWorker:
             )
             await self.job_repository.update_progress(job_id, 1.0)
             
-            # Generate actual files and upload to MinIO
+            # Generate with pure AI only - no fallback processing
             try:
-                # Use pure AI-powered 3D generator (no predefined shapes)
-                from .true_ai_generator import TrueAIGenerator
-                generator = TrueAIGenerator()
-                self.logger.info("Using pure AI-powered 3D model generation", job_id=job_id)
+                # Use CPU-based AI 3D generator
+                from .cpu_ai_generator import CPUAIGenerator
+                generator = CPUAIGenerator()
+                self.logger.info("Using CPU-based AI 3D model generation", job_id=job_id)
                 
                 # Get prompt from job input_data
                 input_data = getattr(job, 'input_data', {})
@@ -122,15 +122,9 @@ class MemoryWorker:
                 await self.job_repository.update_output_files(job_id, output_files)
                 
             except Exception as e:
-                self.logger.error("Failed to generate files with TRELLIS", job_id=job_id, error=str(e))
-                # Fallback will be handled by TrellisFileGenerator itself
-                output_files = [{
-                    "format": "glb", 
-                    "url": f"http://localhost:9100/trellis-output/{job_id}/{job_id}_model.glb",
-                    "size_bytes": 432,
-                    "filename": f"{job_id}_model.glb"
-                }]
-                await self.job_repository.update_output_files(job_id, output_files)
+                self.logger.error("Failed to generate with pure AI - no fallback", job_id=job_id, error=str(e))
+                # No fallback - fail the job if AI generation fails
+                raise
             
             self.logger.info("✅ Job completed successfully", job_id=job_id)
             
