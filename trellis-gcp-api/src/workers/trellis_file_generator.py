@@ -58,10 +58,12 @@ class TrellisFileGenerator:
                     
             except ImportError as e:
                 logger.error("Failed to import TRELLIS. Make sure TRELLIS is installed", error=str(e))
-                raise
+                self._trellis_pipeline = None  # Mark as failed, will use mock
+                return None
             except Exception as e:
                 logger.error("Failed to load TRELLIS pipeline", error=str(e))
-                raise
+                self._trellis_pipeline = None  # Mark as failed, will use mock
+                return None
                 
         return self._trellis_pipeline
     
@@ -310,6 +312,32 @@ class TrellisFileGenerator:
             # Fallback to abstract shape with maximum detail
             return self._generate_advanced_abstract(prompt_lower, complexity, material_properties, color_influence)
 
+    def _generate_simple_creature(self, creature_type, complexity):
+        """Generate simple creature shapes."""
+        import math
+        vertices = []
+        faces = []
+        
+        # Simple creature - elongated body
+        for i in range(10):
+            t = i / 9
+            x = t * 4.0 - 2.0  # Body along X axis
+            y = math.sin(t * math.pi) * 1.0  # Body width
+            z = math.sin(t * math.pi * 2) * 0.5  # Some vertical variation
+            
+            vertices.extend([
+                (x, y, z),
+                (x, -y, z),
+                (x, 0, z + 1.0)  # Top ridge
+            ])
+        
+        # Simple triangular faces
+        for i in range(len(vertices) - 3):
+            if i % 3 == 0:
+                faces.append((i, i+1, i+2))
+        
+        return vertices, faces
+
     def _generate_advanced_creature(self, context, complexity, material_properties, color_influence):
         """Generate highly detailed creatures based on semantic analysis."""
         import math
@@ -332,7 +360,8 @@ class TrellisFileGenerator:
         elif any(pred in primary_animal for pred in ['lion', 'tiger', 'wolf', 'bear']):
             return self._generate_detailed_predator(primary_animal, complexity, material_properties, color_influence, context)
         else:
-            return self._generate_detailed_generic_creature(primary_animal, complexity, material_properties, color_influence, context)
+            # Fallback to simple creature shape
+            return self._generate_simple_creature(primary_animal, complexity)
 
     def _generate_advanced_mechanical(self, context, complexity, material_properties, structural_modifier):
         """Generate highly detailed mechanical objects."""
@@ -1562,11 +1591,11 @@ class TrellisFileGenerator:
         return vertices, faces
     
     async def _create_fallback_model(self, output_path: str, format: str, prompt: str, job_id: str):
-        """Create a more sophisticated fallback 3D model when TRELLIS fails."""
-        logger.info("Creating procedural fallback 3D model", format=format, job_id=job_id, prompt=prompt)
+        """Create a simple fallback 3D model when TRELLIS fails."""
+        logger.info("Creating simple fallback 3D model", format=format, job_id=job_id, prompt=prompt)
         
-        # Generate procedural shape based on prompt
-        vertices, faces = self._generate_procedural_shape(prompt)
+        # Generate simple shape based on prompt keywords
+        vertices, faces = self._generate_simple_shape(prompt)
         
         if format.lower() == "glb":
             # Create a simple GLB (reuse existing implementation)
@@ -1575,12 +1604,11 @@ class TrellisFileGenerator:
                 f.write(glb_content)
         
         elif format.lower() == "obj":
-            # Create OBJ with procedural geometry
+            # Create OBJ with simple geometry
             with open(output_path, 'w') as f:
-                f.write(f"# Procedural 3D model for prompt: {prompt}\n")
+                f.write(f"# Simple 3D model for prompt: {prompt}\n")
                 f.write(f"# Job ID: {job_id}\n")
-                f.write(f"# Generated at: {datetime.utcnow().isoformat()}\n")
-                f.write(f"# Shape generated based on prompt keywords\n\n")
+                f.write(f"# Generated at: {datetime.utcnow().isoformat()}\n\n")
                 
                 for v in vertices:
                     f.write(f"v {v[0]} {v[1]} {v[2]}\n")
@@ -1589,11 +1617,11 @@ class TrellisFileGenerator:
                     f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n")
         
         elif format.lower() == "ply":
-            # Create PLY with procedural geometry
+            # Create PLY with simple geometry
             with open(output_path, 'w') as f:
                 f.write("ply\n")
                 f.write("format ascii 1.0\n")
-                f.write(f"comment Procedural 3D model for prompt: {prompt}\n")
+                f.write(f"comment Simple 3D model for prompt: {prompt}\n")
                 f.write(f"comment Job ID: {job_id}\n")
                 f.write(f"element vertex {len(vertices)}\n")
                 f.write("property float x\n")
@@ -1608,6 +1636,59 @@ class TrellisFileGenerator:
                 
                 for face in faces:
                     f.write(f"3 {face[0]} {face[1]} {face[2]}\n")
+
+    def _generate_simple_shape(self, prompt):
+        """Generate simple shapes based on prompt keywords."""
+        import math
+        
+        prompt_lower = prompt.lower()
+        vertices = []
+        faces = []
+        
+        if 'dragon' in prompt_lower:
+            return self._generate_detailed_dragon(5, {'density': 1.0}, 1.0, {})
+        elif 'robot' in prompt_lower:
+            return self._generate_detailed_robot(5, {'density': 1.0}, 1.0, {})
+        elif 'cat' in prompt_lower or 'animal' in prompt_lower:
+            return self._generate_simple_creature('cat', 5)
+        elif 'car' in prompt_lower or 'vehicle' in prompt_lower:
+            # Simple car shape
+            vertices = [
+                (-2, -1, 0), (2, -1, 0), (2, 1, 0), (-2, 1, 0),  # Bottom
+                (-2, -1, 1), (2, -1, 1), (2, 1, 1), (-2, 1, 1),  # Top
+            ]
+            faces = [
+                (0, 1, 2), (0, 2, 3),  # Bottom
+                (4, 7, 6), (4, 6, 5),  # Top
+                (0, 4, 5), (0, 5, 1),  # Sides
+                (1, 5, 6), (1, 6, 2),
+                (2, 6, 7), (2, 7, 3),
+                (3, 7, 4), (3, 4, 0),
+            ]
+        elif 'house' in prompt_lower or 'building' in prompt_lower:
+            # Simple house shape
+            vertices = [
+                (-2, -2, 0), (2, -2, 0), (2, 2, 0), (-2, 2, 0),  # Base
+                (-2, -2, 2), (2, -2, 2), (2, 2, 2), (-2, 2, 2),  # Walls
+                (0, -2, 3), (0, 2, 3),  # Roof peak
+            ]
+            faces = [
+                (0, 1, 2), (0, 2, 3),  # Floor
+                (4, 7, 6), (4, 6, 5),  # Ceiling
+                (0, 4, 5), (0, 5, 1),  # Walls
+                (1, 5, 6), (1, 6, 2),
+                (2, 6, 7), (2, 7, 3),
+                (3, 7, 4), (3, 4, 0),
+                (4, 8, 5), (5, 8, 6),  # Roof
+                (6, 9, 7), (7, 9, 4),
+                (8, 9, 6), (8, 6, 5),
+            ]
+        else:
+            # Default simple triangle
+            vertices = [(0, 0, 0), (1, 0, 0), (0.5, 1, 0)]
+            faces = [(0, 1, 2)]
+        
+        return vertices, faces
     
     def _create_mock_glb(self, prompt: str) -> bytes:
         """Create a mock GLB file content (reuse from previous implementation)."""

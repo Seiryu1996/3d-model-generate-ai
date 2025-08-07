@@ -29,7 +29,7 @@ class FileGenerator:
         """Generate a simple GLB file (mock implementation)."""
         
         # Create a simple GLB file with basic content
-        glb_content = self._create_mock_glb(prompt)
+        glb_content = self.create_mock_glb("", prompt)
         
         # Write to file
         with open(output_path, 'wb') as f:
@@ -37,7 +37,7 @@ class FileGenerator:
             
         return output_path
     
-    def _create_mock_glb(self, prompt: str) -> bytes:
+    def create_mock_glb(self, job_id: str, prompt: str) -> bytes:
         """Create a mock GLB file content."""
         # This is a very basic mock - in reality you'd generate actual 3D content
         header = b'glTF'  # GLB header

@@ -141,7 +141,7 @@ services:
       - SPCONV_ALGO=native
     volumes:
       - ./src:/app/src
-      - ./TRELLIS:/app/TRELLIS
+      - ../TRELLIS:/app/TRELLIS
     depends_on:
       - redis
       - api

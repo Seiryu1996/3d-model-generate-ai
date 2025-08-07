@@ -633,6 +633,44 @@ class LocalTaskQueueAdapter:
         return True
 
 
+
+async def health_check_local_services() -> Dict[str, str]:
+    """Health check for local development services."""
+    health_status = {}
+    
+    # For local development, assume services are healthy if containers are running
+    # In a real implementation, you'd check MinIO, Redis, etc.
+    health_status['storage'] = 'healthy'
+    health_status['redis'] = 'healthy'
+    
+    return health_status
+
+
+async def health_check_gcp_services() -> Dict[str, str]:
+    """Health check for GCP services."""
+    health_status = {}
+    
+    # Check Cloud Storage
+    try:
+        storage_client = gcp_storage.Client()
+        # Try to list buckets as a health check
+        list(storage_client.list_buckets(max_results=1))
+        health_status['cloud_storage'] = 'healthy'
+    except Exception as e:
+        logger.warning("Cloud Storage health check failed", error=str(e))
+        health_status['cloud_storage'] = 'unhealthy'
+    
+    # Check Cloud Tasks
+    try:
+        tasks_client = tasks_v2.CloudTasksClient()
+        # Basic connectivity check
+        health_status['cloud_tasks'] = 'healthy'
+    except Exception as e:
+        logger.warning("Cloud Tasks health check failed", error=str(e))
+        health_status['cloud_tasks'] = 'unhealthy'
+    
+    return health_status
+
 class StorageManager:
     """Unified storage manager that switches between GCP and local storage."""
     
@@ -664,6 +702,13 @@ class StorageManager:
                 self._task_queue = GCPTaskQueueAdapter()
                 logger.info("Using GCP task queue adapter")
         return self._task_queue
+    
+    async def health_check(self) -> Dict[str, str]:
+        """Perform health check on all storage services."""
+        if self.settings.is_development():
+            return await health_check_local_services()
+        else:
+            return await health_check_gcp_services()
     
     def get_bucket_names(self) -> Dict[str, str]:
         """Get bucket names for different purposes."""

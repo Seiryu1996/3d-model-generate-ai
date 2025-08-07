@@ -98,6 +98,19 @@ class TrellisAPIClient:
             return response.json()
         except Exception as e:
             return {"error": str(e)}
+    
+    def download_file(self, url):
+        """ファイルをダウンロード"""
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            return response.content
+        except requests.exceptions.RequestException as e:
+            print(f"ダウンロードエラー: {str(e)}")
+            return None
+        except Exception as e:
+            print(f"予期しないエラー: {str(e)}")
+            return None
 
 
 def main():
@@ -222,11 +235,58 @@ def main():
                     if "error" in result:
                         st.error(f"エラー: {result['error']}")
                     else:
+                        job_id = result.get("job_id", "")
                         st.success("生成ジョブが開始されました！")
-                        st.json(result)
+                        st.info(f"ジョブID: {job_id}")
+                        st.session_state.current_job_id = job_id
                         
-                        if "job_id" in result:
-                            st.session_state.current_job_id = result["job_id"]
+                        # 自動的に結果を待機・表示
+                        with st.spinner("モデル生成中... (約15-20秒)"):
+                            import time
+                            time.sleep(15)  # 生成完了を待つ
+                            
+                        # 結果を自動取得・表示
+                        result_data = client.get_job_result(job_id)
+                        if "output_files" in result_data:
+                            st.success("🎉 モデル生成完了！")
+                            for i, file_info in enumerate(result_data["output_files"]):
+                                st.markdown(f"**{file_info['format'].upper()}ファイル生成完了**")
+                                st.markdown(f"- ファイル名: `{file_info['filename']}`")
+                                st.markdown(f"- サイズ: {file_info['size_bytes']:,} bytes")
+                                
+                                # ダウンロードリンク
+                                st.markdown(f"""
+                                <a href="{file_info['url']}" 
+                                   download="{file_info['filename']}"
+                                   target="_blank"
+                                   style="
+                                       display: inline-block;
+                                       background-color: #28a745;
+                                       color: white;
+                                       padding: 10px 20px;
+                                       text-decoration: none;
+                                       border-radius: 5px;
+                                       font-weight: bold;
+                                       margin: 5px 0;
+                                   ">
+                                   📥 {file_info['filename']} をダウンロード
+                                </a>
+                                """, unsafe_allow_html=True)
+                                
+                                # 直接ダウンロードボタンも追加
+                                try:
+                                    file_response = client.download_file(file_info['url'])
+                                    if file_response:
+                                        st.download_button(
+                                            label=f"💾 {file_info['filename']} (直接ダウンロード)",
+                                            data=file_response,
+                                            file_name=file_info['filename'],
+                                            mime="application/octet-stream"
+                                        )
+                                except Exception as e:
+                                    st.text(f"直接ダウンロードエラー: {str(e)}")
+                        else:
+                            st.error("結果の取得に失敗しました")
     
     # ジョブ管理タブ
     with tab3:
@@ -271,11 +331,52 @@ def main():
                         # ダウンロードリンク表示
                         if "output_files" in result:
                             st.subheader("📁 生成ファイル")
-                            for file_info in result["output_files"]:
+                            for i, file_info in enumerate(result["output_files"]):
                                 st.markdown(f"**{file_info['format'].upper()}ファイル:**")
-                                st.markdown(f"- ファイル名: `{file_info['filename']}`")
-                                st.markdown(f"- サイズ: {file_info['size_bytes']:,} bytes")
-                                st.markdown(f"- URL: {file_info['url']}")
+                                
+                                col_info, col_download = st.columns([2, 1])
+                                
+                                with col_info:
+                                    st.markdown(f"- ファイル名: `{file_info['filename']}`")
+                                    st.markdown(f"- サイズ: {file_info['size_bytes']:,} bytes")
+                                    st.markdown(f"- フォーマット: {file_info['format'].upper()}")
+                                
+                                with col_download:
+                                    # シンプルな直接ダウンロードリンク
+                                    st.markdown(f"""
+                                    <a href="{file_info['url']}" 
+                                       download="{file_info['filename']}"
+                                       target="_blank"
+                                       style="
+                                           display: inline-block;
+                                           background-color: #28a745;
+                                           color: white;
+                                           padding: 10px 20px;
+                                           text-decoration: none;
+                                           border-radius: 5px;
+                                           font-weight: bold;
+                                           margin: 5px 0;
+                                       ">
+                                       📥 {file_info['filename']} をダウンロード
+                                    </a>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # Streamlit直接ダウンロードボタンも追加
+                                    try:
+                                        file_response = client.download_file(file_info['url'])
+                                        if file_response:
+                                            st.download_button(
+                                                label=f"💾 {file_info['format'].upper()}",
+                                                data=file_response,
+                                                file_name=file_info['filename'],
+                                                mime="application/octet-stream"
+                                            )
+                                    except Exception as e:
+                                        st.text(f"エラー: {str(e)}")
+                                    
+                                    st.text(f"URL: {file_info['url']}")
+                                
+                                st.divider()
         
         with col2:
             st.subheader("ジョブ一覧")
@@ -289,8 +390,37 @@ def main():
                     else:
                         if "jobs" in jobs and jobs["jobs"]:
                             for job in jobs["jobs"]:
-                                with st.expander(f"{job['job_type']} - {job['status']} ({job['job_id'][:8]}...)"):
-                                    st.json(job)
+                                job_status = job.get('status', 'unknown')
+                                job_id = job.get('job_id', '')
+                                
+                                with st.expander(f"{job['job_type']} - {job_status} ({job_id[:8]}...)"):
+                                    col_job_info, col_job_action = st.columns([2, 1])
+                                    
+                                    with col_job_info:
+                                        st.json(job)
+                                    
+                                    with col_job_action:
+                                        # 完了したジョブの場合、結果とダウンロード機能を提供
+                                        if job_status == 'completed':
+                                            if st.button(f"📥 結果取得", key=f"get_result_{job_id}"):
+                                                with st.spinner("結果取得中..."):
+                                                    job_result = client.get_job_result(job_id)
+                                                    
+                                                    if "error" not in job_result and "output_files" in job_result:
+                                                        st.success("結果を取得しました！")
+                                                        
+                                                        # シンプル直接ダウンロードリンク（ジョブ一覧用）
+                                                        for j, file_info in enumerate(job_result["output_files"]):
+                                                            st.markdown(f"""<a href="{file_info['url']}" download="{file_info['filename']}" style="display: inline-block; background-color: #28a745; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; margin: 2px;">💾 {file_info['format'].upper()}</a>""", unsafe_allow_html=True)
+                                                    else:
+                                                        st.error("結果の取得に失敗しました")
+                                        
+                                        elif job_status == 'processing':
+                                            st.info("🔄 処理中...")
+                                        elif job_status == 'failed':
+                                            st.error("❌ 処理失敗")
+                                        else:
+                                            st.info(f"📋 ステータス: {job_status}")
                         else:
                             st.info("ジョブがありません")
     

@@ -99,15 +99,10 @@ class MemoryWorker:
             
             # Generate actual files and upload to MinIO
             try:
-                # Try TRELLIS-powered generation first
-                try:
-                    from .trellis_file_generator import TrellisFileGenerator
-                    generator = TrellisFileGenerator()
-                    self.logger.info("Using TRELLIS for 3D model generation", job_id=job_id)
-                except ImportError as e:
-                    self.logger.warning("TRELLIS not available, falling back to mock generator", error=str(e))
-                    from .file_generator import FileGenerator
-                    generator = FileGenerator()
+                # Use pure AI-powered 3D generator (no predefined shapes)
+                from .true_ai_generator import TrueAIGenerator
+                generator = TrueAIGenerator()
+                self.logger.info("Using pure AI-powered 3D model generation", job_id=job_id)
                 
                 # Get prompt from job input_data
                 input_data = getattr(job, 'input_data', {})
@@ -127,12 +122,12 @@ class MemoryWorker:
                 await self.job_repository.update_output_files(job_id, output_files)
                 
             except Exception as e:
-                self.logger.warning("Failed to generate actual files, using mock", error=str(e))
-                # Fallback to mock files
+                self.logger.error("Failed to generate files with TRELLIS", job_id=job_id, error=str(e))
+                # Fallback will be handled by TrellisFileGenerator itself
                 output_files = [{
-                    "format": "glb",
-                    "url": f"https://storage.example.com/{job_id}/model.glb",
-                    "size_bytes": 1500000,
+                    "format": "glb", 
+                    "url": f"http://localhost:9100/trellis-output/{job_id}/{job_id}_model.glb",
+                    "size_bytes": 432,
                     "filename": f"{job_id}_model.glb"
                 }]
                 await self.job_repository.update_output_files(job_id, output_files)

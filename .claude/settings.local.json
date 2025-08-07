@@ -40,7 +40,12 @@
       "Bash(docker logs:*)",
       "Bash(docker-compose restart:*)",
       "Bash(sed:*)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(claude --version)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(docker restart:*)",
+      "mcp__serena__think_about_collected_information"
     ]
   },
   "enableAllProjectMcpServers": true,
