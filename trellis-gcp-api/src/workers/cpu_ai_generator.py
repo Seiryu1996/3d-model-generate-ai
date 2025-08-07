@@ -211,17 +211,17 @@ class CPUAIGenerator:
     async def _export_obj(self, mesh, prompt, output_path):
         """Export mesh to OBJ format."""
         with open(output_path, 'w') as f:
-            f.write(f"# CPU AI-Generated 3D model for prompt: {prompt}\\n")
-            f.write(f"# Generated using procedural AI techniques\\n")
-            f.write(f"# Generated at: {datetime.utcnow().isoformat()}\\n")
-            f.write(f"# Vertices: {len(mesh.vertices)}, Faces: {len(mesh.faces)}\\n\\n")
+            f.write(f"# CPU AI-Generated 3D model for prompt: {prompt}\n")
+            f.write(f"# Generated using procedural AI techniques\n")
+            f.write(f"# Generated at: {datetime.utcnow().isoformat()}\n")
+            f.write(f"# Vertices: {len(mesh.vertices)}, Faces: {len(mesh.faces)}\n\n")
             
             for v in mesh.vertices:
-                f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\\n")
+                f.write(f"v {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}\n")
             
-            f.write("\\n")
+            f.write("\n")
             for face in mesh.faces:
-                f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\\n")
+                f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n")
         
         logger.info("CPU AI OBJ export completed", path=output_path)
     

@@ -45,7 +45,8 @@
       "Bash(pkill:*)",
       "Bash(true)",
       "Bash(docker restart:*)",
-      "mcp__serena__think_about_collected_information"
+      "mcp__serena__think_about_collected_information",
+      "Bash(git checkout:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
